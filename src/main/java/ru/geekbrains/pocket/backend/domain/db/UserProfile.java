@@ -26,7 +26,7 @@ public class UserProfile {
     private String username;
 
     @NotEmpty
-    @Field("full_name")
+    @Field("fullname")
     private String fullName;
 
     @Field("last_seen")

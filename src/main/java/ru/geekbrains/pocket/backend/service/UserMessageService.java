@@ -14,7 +14,11 @@ public interface UserMessageService {
 
     void deleteMessage(UserMessage userMessage);
 
+    void deleteAllMessages();
+
     UserMessage getMessage(ObjectId id);
+
+    List<UserMessage> getAllMessagesUser(User user);
 
     List<UserMessage> getMessagesBySender(User sender);
 

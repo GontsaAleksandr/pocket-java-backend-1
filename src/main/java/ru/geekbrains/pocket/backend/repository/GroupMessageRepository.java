@@ -16,4 +16,6 @@ public interface GroupMessageRepository extends MongoRepository<GroupMessage, Ob
 
     List<GroupMessage> findByGroup(Group group);
 
+    List<GroupMessage> findByGroupId(ObjectId id);
+
 }

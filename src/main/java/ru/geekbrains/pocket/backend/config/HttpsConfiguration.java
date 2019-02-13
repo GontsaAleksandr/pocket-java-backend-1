@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 //https://stackoverflow.com/questions/26655875/spring-boot-redirect-http-to-https
+//redirect http to https
 
 @Configuration
 public class HttpsConfiguration {

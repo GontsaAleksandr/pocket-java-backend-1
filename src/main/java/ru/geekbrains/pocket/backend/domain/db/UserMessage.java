@@ -9,6 +9,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -33,17 +34,19 @@ public class UserMessage {
     @NotNull
     private User recipient; //получатель
 
+    @NotNull
     @NotEmpty
     private String text;
 
     @Nullable
     private Attachment attachment = null;
 
-    private boolean read;
+    private boolean read = false;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private Date sent_at;
 
-    public UserMessage(User sender, User recipient, String text) {
+    public UserMessage(@NotNull User sender, @NotNull User recipient, @NotEmpty String text) {
         this.sender = sender;
         this.recipient = recipient;
         this.text = text;
@@ -51,12 +54,14 @@ public class UserMessage {
 
     @Override
     public String toString() {
-        return "UserMessage{" +
-                "id=" + id +
-                ", sender=" + sender.getUsername() +
-                ", recipient=" + recipient.getUsername() +
-                ", text=" + text +
-                ", sent_at=" + sent_at +
-                '}';
+        final StringBuilder builder = new StringBuilder();
+        builder.append("UserMessage {")
+                .append("'id':'").append(id).append("'")
+                .append(", ").append(sender)
+                .append(", ").append(recipient)
+                .append(",'text':'").append(text).append("'")
+                .append(",'sent_at':'").append(sent_at).append("'")
+                .append("}");
+        return builder.toString();
     }
 }

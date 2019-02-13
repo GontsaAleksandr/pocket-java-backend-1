@@ -10,13 +10,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Date;
 
 @Data
 @NoArgsConstructor
 @Document(collection = "users.contacts")
-public class UserContacts {
+public class UserContact {
 
     @Id
     private ObjectId id;
@@ -24,20 +25,33 @@ public class UserContacts {
     @DBRef
     @Indexed
     @Valid
-    @Field(value = "user_id")
+    @NotNull
     private User user;
 
     @DBRef
+    @NotNull
     private User contact;
 
-    @Size(min = 1, max = 50)
+    //@Size(min = 1, max = 50)
     @Field(value = "byname")
     private String byName;
 
     @Field(value = "added_at")
-    private Date addedAt;
+    private Date addedAt = new Date();
 
-    public UserContacts(User user, User contact, String byName, Date addedAt) {
+    public UserContact(@Valid @NotNull User user, @NotNull User contact) {
+        this.user = user;
+        this.contact = contact;
+        this.byName = user.getProfile().getUsername();
+    }
+
+    public UserContact(@Valid @NotNull User user, @NotNull User contact, String byName) {
+        this.user = user;
+        this.contact = contact;
+        this.byName = byName;
+    }
+
+    public UserContact(User user, User contact, String byName, Date addedAt) {
         this.user = user;
         this.contact = contact;
         this.byName = byName;
@@ -46,7 +60,7 @@ public class UserContacts {
 
     @Override
     public String toString() {
-        return "UsersContacts{" +
+        return "UserContact{" +
                 "id=" + id +
                 ", user=" + user +
                 ", contact=" + contact +

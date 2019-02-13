@@ -16,59 +16,68 @@ import java.util.Optional;
 @Service
 public class UserMessageServiceImpl implements UserMessageService {
     @Autowired
-    private UserMessageRepository repository;
+    private UserMessageRepository userMessageRepository;
 
     @Override
     public UserMessage createMessage(UserMessage message) {
         message.setSent_at(new Date());
         message.setRead(false);
-        return repository.insert(message);
+        return userMessageRepository.insert(message);
     }
 
     public UserMessage createMessage(User sender, User recipient, String text) {
         UserMessage messageNew = new UserMessage(sender, recipient, text);
         messageNew.setSent_at(new Date());
-        messageNew.setRead(false);
-        return repository.insert(messageNew);
+        return userMessageRepository.insert(messageNew);
     }
 
     @Override
     public void deleteMessage(UserMessage message) {
-        repository.delete(message);
+        userMessageRepository.delete(message);
+    }
+
+    @Override
+    public void deleteAllMessages() {
+        userMessageRepository.deleteAll();
     }
 
     @Override
     public UserMessage getMessage(ObjectId id) {
-        Optional<UserMessage> userMessage = Optional.of(repository.findById(id).orElseThrow(
+        Optional<UserMessage> userMessage = Optional.of(userMessageRepository.findById(id).orElseThrow(
                 () -> new UserMessageNotFoundException("User message with id = " + id + " not found")));
         return userMessage.get();
     }
 
     @Override
+    public List<UserMessage> getAllMessagesUser(User user) {
+        return userMessageRepository.findBySenderOrRecipient(user, user);
+    }
+
+    @Override
     public List<UserMessage> getMessagesBySender(User sender) {
-        return repository.findBySender(sender);
+        return userMessageRepository.findBySender(sender);
     }
 
     @Override
     public List<UserMessage> getMessagesByRecipient(User recipient) {
-        return repository.findByRecipient(recipient);
+        return userMessageRepository.findByRecipient(recipient);
     }
 
     @Override
     public List<UserMessage> getUnreadMessagesFromUser(User sender) {
-        return repository.findBySenderAndReadFalse(sender);
+        return userMessageRepository.findBySenderAndReadFalse(sender);
     }
 
     @Override
     public List<UserMessage> getUnreadMessagesToUser(User recipient) {
-        return repository.findByRecipientAndReadFalse(recipient);
+        return userMessageRepository.findByRecipientAndReadFalse(recipient);
     }
 
     public UserMessage sendMessageFromTo(User sender, User recipient, String message) {
         UserMessage messageNew = new UserMessage(sender, recipient, message);
         messageNew.setSent_at(new Date());
         messageNew.setRead(false);
-        return repository.save(messageNew);
+        return userMessageRepository.save(messageNew);
     }
 
     @Override

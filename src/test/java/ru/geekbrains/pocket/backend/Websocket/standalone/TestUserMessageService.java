@@ -61,7 +61,17 @@ public class TestUserMessageService implements UserMessageService {
     }
 
     @Override
+    public void deleteAllMessages() {
+
+    }
+
+    @Override
     public UserMessage getMessage(ObjectId id) {
+        return null;
+    }
+
+    @Override
+    public List<UserMessage> getAllMessagesUser(User user) {
         return null;
     }
 

@@ -186,8 +186,8 @@ public class StandaloneMessagesWebsocketControllerTests {
         assertEquals(1, this.testUserMessageService.getUserMessages().size());
         UserMessage actual = this.testUserMessageService.getUserMessages().get(0);
 
-        assertEquals("Bob", actual.getSender().getUsername());
-        assertEquals("Alex", actual.getRecipient().getUsername());
+        assertEquals("Bob", actual.getSender().getProfile().getUsername());
+        assertEquals("Alex", actual.getRecipient().getProfile().getUsername());
         assertEquals(textMessage, actual.getText());
 
 /*		//=====ОТВЕТ СЕРВЕРА===================================

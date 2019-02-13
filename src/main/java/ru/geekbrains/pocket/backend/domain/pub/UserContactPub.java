@@ -4,8 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.geekbrains.pocket.backend.domain.db.UserContact;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -15,11 +16,17 @@ public class UserContactPub {
 
     private UserProfilePub contact;
     private String byname;
-    private Timestamp added_at;
+    private Date added_at;
+
+    public UserContactPub(UserContact userContact){
+        this.contact = new UserProfilePub(userContact.getContact());
+        this.byname = userContact.getByName();
+        this.added_at = userContact.getAddedAt();
+    }
 
     @Override
     public String toString() {
-        return "UserContactPub{" +
+        return "UserContact{" +
                 "'contact':'" + contact + "'" +
                 ", 'byname':'" + byname + "'" +
                 ", 'added_at':'" + added_at + "'" +

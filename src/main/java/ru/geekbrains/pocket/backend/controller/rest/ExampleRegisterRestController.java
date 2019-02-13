@@ -53,7 +53,6 @@ public class ExampleRegisterRestController {
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode("123")); //TODO
-        user.setUsername(name);
         user.setProfile(userProfile);
         user.setRoles(Arrays.asList(roleUser));
 

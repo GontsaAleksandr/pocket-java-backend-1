@@ -11,13 +11,19 @@ public interface GroupMessageService {
 
     GroupMessage createMessage(GroupMessage groupMessage);
 
+    GroupMessage createMessage(User sender, Group group, String text);
+
     void deleteMessage(GroupMessage groupMessage);
+
+    void deleteAllMessages();
 
     GroupMessage getMessage(ObjectId id);
 
-    List<GroupMessage> getMessagesBySender(User sender);
+    List<GroupMessage> getMessages(User sender);
 
-    List<GroupMessage> getMessagesByGroup(Group group);
+    List<GroupMessage> getMessages(Group group);
+
+    List<GroupMessage> getMessages(ObjectId id);
 
     GroupMessage updateMessage(GroupMessage groupMessage);
 

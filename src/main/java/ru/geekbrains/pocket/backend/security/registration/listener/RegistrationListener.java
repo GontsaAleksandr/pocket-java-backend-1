@@ -8,17 +8,16 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 import ru.geekbrains.pocket.backend.domain.db.User;
+import ru.geekbrains.pocket.backend.domain.db.UserToken;
 import ru.geekbrains.pocket.backend.security.registration.OnRegistrationCompleteEvent;
-import ru.geekbrains.pocket.backend.service.UserService;
-
-import java.util.UUID;
+import ru.geekbrains.pocket.backend.service.UserTokenService;
 
 //https://www.baeldung.com/registration-verify-user-by-email
 
 @Component
 public class RegistrationListener implements ApplicationListener<OnRegistrationCompleteEvent> {
     @Autowired
-    private UserService userService;
+    private UserTokenService userTokenService;
 
     @Autowired
     private MessageSource messages;
@@ -38,10 +37,9 @@ public class RegistrationListener implements ApplicationListener<OnRegistrationC
 
     private void confirmRegistration(final OnRegistrationCompleteEvent event) {
         final User user = event.getUser();
-        final String token = UUID.randomUUID().toString();
-        userService.createVerificationTokenForUser(user, token);
+        UserToken userToken = userTokenService.createTokenForUser(user);
 
-        final SimpleMailMessage email = constructEmailMessage(event, user, token);
+        final SimpleMailMessage email = constructEmailMessage(event, user, userToken.getToken());
         mailSender.send(email);
     }
 

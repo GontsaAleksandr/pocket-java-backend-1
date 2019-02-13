@@ -15,7 +15,7 @@ public class UserResource extends ResourceSupport {
 
     public UserResource(User user) {
         this.user = user;
-        this.add(linkTo(methodOn(ExampleUserRestController.class).getUserByName(user.getUsername())).withSelfRel());
+        this.add(linkTo(methodOn(ExampleUserRestController.class).getUserByName(user.getEmail())).withSelfRel());
         this.add(linkTo(methodOn(ExampleUserRestController.class).getAllUsers()).withRel("users"));
     }
 

@@ -45,7 +45,7 @@ public class CustomRememberMeServices extends PersistentTokenBasedRememberMeServ
             tokenRepository.createNewToken(persistentToken);
             addCookie(persistentToken, request, response);
         } catch (Exception e) {
-            logger.error("Failed to save persistent token ", e);
+            logger.error("Failed to insert persistent token ", e);
         }
     }
 

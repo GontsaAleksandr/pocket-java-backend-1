@@ -21,7 +21,7 @@ public class UserResources extends ResourceSupport {
     public UserResources(List<User> users) {
         List<Resource<User>> userResources = users.stream()
                 .map(user -> new Resource<>(user,
-                        linkTo(methodOn(ExampleUserRestController.class).getUserByName(user.getUsername())).withSelfRel(),
+                        linkTo(methodOn(ExampleUserRestController.class).getUserByName(user.getEmail())).withSelfRel(),
                         linkTo(methodOn(ExampleUserRestController.class).getAllUsers()).withRel("users")))
                 .collect(Collectors.toList());
 

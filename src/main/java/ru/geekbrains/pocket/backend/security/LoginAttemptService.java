@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+//https://www.baeldung.com/spring-security-block-brute-force-authentication-attempts
+//неудачная попытка аутентификации увеличивает количество попыток для этого IP-адреса,
+// и успешная аутентификация сбрасывает этот счетчик.
+
 @Service
 public class LoginAttemptService {
 
@@ -16,15 +20,15 @@ public class LoginAttemptService {
 
     public LoginAttemptService() {
         super();
-        attemptsCache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build(new CacheLoader<String, Integer>() {
+        attemptsCache = CacheBuilder.newBuilder()
+                .expireAfterWrite(1, TimeUnit.DAYS)
+                .build(new CacheLoader<String, Integer>() {
             @Override
             public Integer load(final String key) {
                 return 0;
             }
         });
     }
-
-    //
 
     public void loginSucceeded(final String key) {
         attemptsCache.invalidate(key);

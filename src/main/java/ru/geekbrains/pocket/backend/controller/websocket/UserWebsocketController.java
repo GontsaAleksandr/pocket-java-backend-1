@@ -12,6 +12,6 @@ public class UserWebsocketController {
     @MessageMapping("/hello")
     @SendTo("/topic/greetings")
     public GreetingResponse greeting(@RequestBody User user) {
-        return new GreetingResponse("Hello, " + user.getUsername() + "!");
+        return new GreetingResponse("Hello, " + user.getEmail() + "!");
     }
 }

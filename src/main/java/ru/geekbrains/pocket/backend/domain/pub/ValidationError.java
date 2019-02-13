@@ -15,7 +15,7 @@ public class ValidationError {
 
     @Override
     public String toString() {
-        return "UserBlacklist{" +
+        return "ValidationError{" +
                 "'fieldName':'" + fieldName + "'" +
                 '}';
     }

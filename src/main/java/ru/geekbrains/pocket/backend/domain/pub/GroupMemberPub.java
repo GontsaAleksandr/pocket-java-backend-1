@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.geekbrains.pocket.backend.domain.db.GroupMember;
+import ru.geekbrains.pocket.backend.enumeration.RoleGroupMember;
 
 @Getter
 @Setter
@@ -12,15 +14,20 @@ import lombok.Setter;
 @AllArgsConstructor
 public class GroupMemberPub {
 
-    private String role;
+    private RoleGroupMember role;
 
-    private UserProfilePub userProfile;
+    private UserProfilePub user;
+
+    public GroupMemberPub(GroupMember groupMember){
+        this.role = groupMember.getRole();
+        this.user = new UserProfilePub(groupMember.getMember());
+    }
 
     @Override
     public String toString() {
-        return "GroupMemberPub{" +
+        return "GroupMember{" +
                 "role='" + role + '\'' +
-                ", userProfile=" + userProfile +
+                ", user=" + user +
                 '}';
     }
 }

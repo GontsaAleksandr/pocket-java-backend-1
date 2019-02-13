@@ -75,7 +75,7 @@ public class ExampleUserRestController {
     public Resources<Resource<User>> getAllUsers3() {
         List<Resource<User>> users = userService.getAllUsers().stream()
                 .map(user -> new Resource<>(user,
-                        linkTo(methodOn(ExampleUserRestController.class).getUserByName2(user.getUsername())).withSelfRel(),
+                        linkTo(methodOn(ExampleUserRestController.class).getUserByName2(user.getEmail())).withSelfRel(),
                         linkTo(methodOn(ExampleUserRestController.class).getAllUsers()).withRel("users")))
                 .collect(Collectors.toList());
 

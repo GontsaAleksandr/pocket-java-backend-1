@@ -13,26 +13,19 @@ public interface UserRepository extends MongoRepository<User, ObjectId> {
 
     void deleteByEmail(String email);
 
-    User findFirstByUsername(String username);
+    User findByEmail(String email);
 
     //@Cacheable()
-    User findByUsername(String username);
+    User findByProfileUsername(String username);
 
     // Supports native JSON query string
     @Query("{firstname:'?0'}")
     List<User> findCustomByFirstname(String firstname);
 
-    User findByEmail(String email);
-
-    @Query("{'email':?0}")
-    User findByUserEmail(String email);
-
     @Query(value = "{ 'firstname' : ?0 }", fields = "{ 'firstname' : 1, 'lastname' : 1}")
     List<User> findByTheUsersFirstname(String firstname);
 
     User findByEmailMatches(String email);
-
-    User findByProfileUsername(String Username);
 
 }
 

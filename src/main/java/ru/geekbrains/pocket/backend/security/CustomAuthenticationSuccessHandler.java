@@ -70,7 +70,7 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     private String gerUserName(final Authentication authentication) {
-        return ((User) authentication.getPrincipal()).getUsername(); //email
+        return ((User) authentication.getPrincipal()).getEmail();
     }
 
     private void addWelcomeCookie(final String user, final HttpServletResponse response) {

@@ -20,8 +20,8 @@ import ru.geekbrains.pocket.backend.exception.UserNotFoundException;
 import ru.geekbrains.pocket.backend.response.GenericResponse;
 
 @ControllerAdvice
+//@RestControllerAdvice
 public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
-    // API
 
     @Autowired
     private MessageSource messages;

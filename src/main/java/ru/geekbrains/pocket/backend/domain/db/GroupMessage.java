@@ -35,16 +35,19 @@ public class GroupMessage {
     @NotEmpty
     private String text;
 
-    private Object in_thread;
+    @Nullable
+    private Object in_thread = null;
 
-    private ObjectId belongs_to;
+    @DBRef
+    @Nullable
+    private GroupMessage belongs_to = null;
 
     @Nullable
-    private Attachment attachment;
+    private Attachment attachment = null;
 
     private Date sent_at;
 
-    public GroupMessage(User sender, Group group, String text) {
+    public GroupMessage(@NotNull User sender, @NotNull Group group, @NotEmpty String text) {
         this.sender = sender;
         this.group = group;
         this.text = text;
@@ -52,13 +55,15 @@ public class GroupMessage {
 
     @Override
     public String toString() {
-        return "GroupMessage{" +
-                "id=" + id +
-                ", sender=" + sender.getUsername() +
-                ", group=" + group.getName() +
-                ", text=" + text +
-                ", sent_at=" + sent_at +
-                '}';
+        final StringBuilder builder = new StringBuilder();
+        builder.append("GroupMessage {")
+                .append("'id':'").append(id).append("'")
+                .append(", ").append(sender)
+                .append(", ").append(group)
+                .append(",'text':'").append(text).append("'")
+                .append(",'sent_at':'").append(sent_at).append("'")
+                .append("}");
+        return builder.toString();
     }
 
 }

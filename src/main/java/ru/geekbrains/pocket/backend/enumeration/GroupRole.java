@@ -1,6 +1,6 @@
 package ru.geekbrains.pocket.backend.enumeration;
 
-//this class for class ProjectMembers (collection = "projects.members")
+//this class for class ProjectMember (collection = "projects.members")
 
 public enum GroupRole {
 

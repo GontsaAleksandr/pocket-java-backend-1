@@ -10,8 +10,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.repository.UserRepository;
 
-import java.util.Optional;
-
 import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
@@ -37,7 +35,7 @@ public class UserMongoRepositoryTest {
     @Test
     public void testFetchData() {
         /*Test data retrieval*/
-        User userA = userMongoRepository.findByUsername("Bob");
+        User userA = userMongoRepository.findByProfileUsername("Bob");
         assertNotNull(userA);
         /*Get all products, list should only have two*/
         Iterable<User> users = userMongoRepository.findAll();
@@ -51,10 +49,10 @@ public class UserMongoRepositoryTest {
     @Test
     public void testDataUpdate() {
         /*Test update*/
-        User userB = userMongoRepository.findByUsername("Bob");
+        User userB = userMongoRepository.findByProfileUsername("Bob");
         userB.setEmail("bob@mail.ru");
         userMongoRepository.save(userB);
-        User userC = userMongoRepository.findByUsername("Bob");
+        User userC = userMongoRepository.findByProfileUsername("Bob");
         assertNotNull(userC);
         assertEquals("bob@mail.ru", userC.getEmail());
     }

@@ -1,11 +1,10 @@
 package ru.geekbrains.pocket.backend.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 //@EnableWebMvc
-public class CORSConfig implements WebMvcConfigurer {
+public class CORSConfig { //implements WebMvcConfigurer {
 
     //===CORS===
 
