@@ -11,7 +11,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import java.util.Date;
 
 @Data

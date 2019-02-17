@@ -5,7 +5,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserBlacklist;
-import ru.geekbrains.pocket.backend.domain.db.UserContact;
 
 import java.util.List;
 

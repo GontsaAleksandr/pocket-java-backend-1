@@ -66,6 +66,7 @@ public class TomcatWebSocketTestServer implements WebSocketTestServer {
         this.tomcatServer.setConnector(connector);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private static File createBaseDir(int port) {
         try {
             File file = File.createTempFile("tomcat.", "." + port);
@@ -90,7 +91,8 @@ public class TomcatWebSocketTestServer implements WebSocketTestServer {
         this.context.addApplicationListener(WsContextListener.class.getName());
     }
 
-    public void deployWithInitializer(Class<? extends WebApplicationInitializer>... initializers) {
+    @SafeVarargs
+    public final void deployWithInitializer(Class<? extends WebApplicationInitializer>... initializers) {
         this.context = this.tomcatServer.addContext("", this.baseDir.getAbsolutePath());
         Tomcat.addServlet(this.context, "default", "org.apache.catalina.servlets.DefaultServlet");
         this.context.addApplicationListener(WsContextListener.class.getName());

@@ -6,8 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,37 +25,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.util.List;
+import java.io.IOException;
 
-@Slf4j
+@Log4j2
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 public class GroupRestController {
+    //private static final Logger logger = LoggerFactory.getLogger(GroupRestController.class.getName());
+
     @Autowired
     private GroupService groupService;
     @Autowired
     private GroupMemberService groupMemberService;
     @Autowired
     private HttpRequestComponent httpRequestComponent;
-
-//    @GetMapping("/groups/{id}") //Получить информацию о группе
-//    public ResponseEntity<?> getGroup(@PathVariable String id) {
-//        Group group = groupService.getGroup(new ObjectId(id));
-//        if (group != null) {
-//            return new ResponseEntity<>(new GroupPub(group), HttpStatus.OK);
-//        }
-//        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-//    }
-//
-//    @GetMapping("/groups/{id}") //Получить информацию о группе
-//    public ResponseEntity<?> getGroup(@PathVariable String id, @RequestParam("invitation_code") String invitationCode) {
-//        Group group = groupService.getGroup(new ObjectId(id));
-//        if (group != null) {
-//            if (group.getInvitation_code().equals(invitationCode))
-//                return new ResponseEntity<>(new GroupPub(group), HttpStatus.OK);
-//        }
-//        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-//    }
 
     @GetMapping("/groups/{id}") //Получить информацию о группе
     public ResponseEntity<?> getGroup(@PathVariable String id,
@@ -117,44 +101,87 @@ public class GroupRestController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    //TODO replace to LINK method
-    @PostMapping("/groups1/{id}") //Вступить в группу
-    public ResponseEntity<?> joinToGroup(@PathVariable String id,
-                                         @Valid @RequestBody InvitationCodeRequest invitationCodeRequest,
+    @RequestMapping("/groups/{id}") //Вступить в группу //Покинуть группу
+    public ResponseEntity<?> joinOrLeaveTheGroup(@PathVariable String id,
                                          HttpServletRequest request) {
-        User user = httpRequestComponent.getUserFromToken(request);
-        Group group = groupService.getGroup(new ObjectId(id));
-        if (invitationCodeRequest != null && user != null
-                && group != null && group.getInvitation_code() != null) {
-            if (group.getInvitation_code().equals(invitationCodeRequest.getInvitation_code())) {
-                //TODO add to GroupMember
-                List<GroupMember> groupMembers = groupMemberService.getGroupMembers(group);
-                GroupMember groupMember = groupMemberService.getGroupMember(group, user);
-                if (groupMember == null) {
-                    groupMemberService.createGroupMember(group, user, RoleGroupMember.speacker);
-                }
-                return new ResponseEntity<>(new GroupPub(group), HttpStatus.OK);
-            }
+        InvitationCodeRequest invitationCodeRequest = null;
+        try {
+            invitationCodeRequest = new ObjectMapper().readValue(request.getReader(), InvitationCodeRequest.class);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        if (request.getMethod().equals("LINK")) {
+            log.info("LINK METHOD"); //Вступить в группу
+            User user = httpRequestComponent.getUserFromToken(request);
+            Group group = groupService.getGroup(new ObjectId(id));
+            if (invitationCodeRequest != null && user != null
+                    && group != null && group.getInvitation_code() != null) {
+                if (group.getInvitation_code().equals(invitationCodeRequest.getInvitation_code())) {
+                    GroupMember groupMember = groupMemberService.getGroupMember(group, user);
+                    if (groupMember == null) {
+                        groupMemberService.createGroupMember(group, user, RoleGroupMember.speacker);
+                    }
+                    return new ResponseEntity<>(new GroupPub(group), HttpStatus.OK);
+                }
+            }
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else if (request.getMethod().equals("UNLINK")) {
+            log.info("UNLINK METHOD"); //Покинуть группу
+            User user = httpRequestComponent.getUserFromToken(request);
+            Group group = groupService.getGroup(new ObjectId(id));
+            if (user != null && group != null) {
+                GroupMember groupMember = groupMemberService.getGroupMember(group, user);
+                if (groupMember != null) {
+                    groupMemberService.deleteGroupMember(groupMember);
+                }
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        } else {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
     }
 
-    //TODO replace to UNLINK method
-    @PostMapping("/groups2/{id}") //Покинуть группу
-    //@RequestMapping ( path = "/groups/{id}", method = RequestMethod.DELETE)
-    public ResponseEntity<?> leaveTheGroup(@PathVariable String id,
-                                           HttpServletRequest request) {
-        User user = httpRequestComponent.getUserFromToken(request);
-        Group group = groupService.getGroup(new ObjectId(id));
-        if (user != null && group != null) {
-            GroupMember groupMember = groupMemberService.getGroupMember(group, user);
-            if (groupMember != null) {
-                groupMemberService.deleteGroupMember(groupMember);
-            }
-                return new ResponseEntity<>(HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-    }
+//    //TODO replace to LINK method
+//    @PostMapping("/groups/{id}") //Вступить в группу
+//    //@RequestMapping("/groups/{id}") //Вступить в группу
+//    public ResponseEntity<?> joinToGroup(@PathVariable String id,
+//                                         @Valid @RequestBody InvitationCodeRequest invitationCodeRequest,
+//                                         HttpServletRequest request) {
+//        User user = httpRequestComponent.getUserFromToken(request);
+//        Group group = groupService.getGroup(new ObjectId(id));
+//        if (invitationCodeRequest != null && user != null
+//                && group != null && group.getInvitation_code() != null) {
+//            if (group.getInvitation_code().equals(invitationCodeRequest.getInvitation_code())) {
+//                //TODO add to GroupMember
+//                List<GroupMember> groupMembers = groupMemberService.getGroupMembers(group);
+//                GroupMember groupMember = groupMemberService.getGroupMember(group, user);
+//                if (groupMember == null) {
+//                    groupMemberService.createGroupMember(group, user, RoleGroupMember.speacker);
+//                }
+//                return new ResponseEntity<>(new GroupPub(group), HttpStatus.OK);
+//            }
+//        }
+//        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//    }
+//
+//    //TODO replace to UNLINK method
+//    @DeleteMapping("/groups/{id}") //Покинуть группу
+////    @RequestMapping("/groups/{id}") //Покинуть группу
+//    //@RequestMapping ( path = "/groups/{id}", method = RequestMethod.DELETE)
+//    public ResponseEntity<?> leaveTheGroup(@PathVariable String id,
+//                                           HttpServletRequest request) {
+//        User user = httpRequestComponent.getUserFromToken(request);
+//        Group group = groupService.getGroup(new ObjectId(id));
+//        if (user != null && group != null) {
+//            GroupMember groupMember = groupMemberService.getGroupMember(group, user);
+//            if (groupMember != null) {
+//                groupMemberService.deleteGroupMember(groupMember);
+//            }
+//                return new ResponseEntity<>(HttpStatus.OK);
+//        }
+//        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+//    }
 
     //===== Request & Response =====
 
@@ -164,7 +191,7 @@ public class GroupRestController {
     @AllArgsConstructor
     private static class InvitationCodeRequest {
 
-        @Nullable
+        //@Nullable
         private String invitation_code;
 
     }

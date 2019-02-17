@@ -1,6 +1,6 @@
 package ru.geekbrains.pocket.backend.controller.rest;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,7 +14,7 @@ import ru.geekbrains.pocket.backend.service.UserService;
 
 import java.util.List;
 
-@Slf4j
+@Log4j2
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/groups")
@@ -36,7 +36,7 @@ public class GroupMessageRestController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 }
 
-    @GetMapping("/{idGroup}/messages/{idMessage}") //Получить конкретное сообщение
+    @GetMapping("/{idGroup}/messages/{id}") //Получить конкретное сообщение
     public ResponseEntity<?> findMessage(@PathVariable String idGroup, @PathVariable String idMessage) {
         GroupMessage message = groupMessageService.getMessage(new ObjectId(idMessage));
         if (message != null) {

@@ -4,14 +4,12 @@ import com.google.common.base.Strings;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Service;
 import ru.geekbrains.pocket.backend.domain.db.DeviceMetadata;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.repository.DeviceMetadataRepository;
@@ -28,11 +26,11 @@ import java.util.Objects;
 
 import static java.util.Objects.nonNull;
 
-//@Component
-@Service
+//@Log4j2
+//@Service
 public class DeviceService {
     private static final String UNKNOWN = "UNKNOWN";
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    //private final Logger logger = LoggerFactory.getLogger(getClass());
     @Value("${support.email}")
     private String from;
 

@@ -1,6 +1,6 @@
 package ru.geekbrains.pocket.backend.exception;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -14,7 +14,7 @@ import java.sql.SQLException;
 
 //https://spring.io/blog/2013/11/01/exception-handling-in-spring-mvc
 
-@Slf4j
+@Log4j2
 @Controller
 public class ExceptionHandlingController {
 

@@ -143,7 +143,7 @@ public class ContextMessagesWebsocketControllerTests {
         //тело отправляемого сообщения от клиента
         MessagesWebsocketController.ClientSendMessage clientSendMessage = new MessagesWebsocketController.ClientSendMessage();
         clientSendMessage.setText(textMessage);
-        //clientSendMessage.setGroup("");
+        //processMessageFromClient.setGroup("");
         clientSendMessage.setRecipient(userService.getUserByUsername("Alex").getId().toString()); //"5c4459823c56f7063c1bc034"); //
 
         byte[] payload = new ObjectMapper().writeValueAsBytes(clientSendMessage);

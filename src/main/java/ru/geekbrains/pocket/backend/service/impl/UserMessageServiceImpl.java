@@ -11,7 +11,6 @@ import ru.geekbrains.pocket.backend.service.UserMessageService;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserMessageServiceImpl implements UserMessageService {
@@ -43,9 +42,9 @@ public class UserMessageServiceImpl implements UserMessageService {
 
     @Override
     public UserMessage getMessage(ObjectId id) {
-        Optional<UserMessage> userMessage = Optional.of(userMessageRepository.findById(id).orElseThrow(
-                () -> new UserMessageNotFoundException("User message with id = " + id + " not found")));
-        return userMessage.get();
+        UserMessage userMessage = userMessageRepository.findById(id).orElseThrow(
+                () -> new UserMessageNotFoundException("User message with id = " + id + " not found"));
+        return userMessage;
     }
 
     @Override

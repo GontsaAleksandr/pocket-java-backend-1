@@ -1,47 +1,54 @@
 package ru.geekbrains.pocket.backend.controller.websocket;
 
 import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
-import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.messaging.simp.broker.BrokerAvailabilityEvent;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.util.HtmlUtils;
+import ru.geekbrains.pocket.backend.domain.db.Group;
+import ru.geekbrains.pocket.backend.domain.db.GroupMessage;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserMessage;
+import ru.geekbrains.pocket.backend.domain.pub.MessagePub;
+import ru.geekbrains.pocket.backend.service.GroupMessageService;
+import ru.geekbrains.pocket.backend.service.GroupService;
 import ru.geekbrains.pocket.backend.service.UserMessageService;
 import ru.geekbrains.pocket.backend.service.UserService;
 
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 //https://o7planning.org/ru/10719/create-a-simple-chat-application-with-spring-boot-and-websocket
 //https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#websocket-server
 
+@Log4j2
 @Controller
-@Slf4j
 public class MessagesWebsocketController implements ApplicationListener<BrokerAvailabilityEvent> {
 
     private AtomicBoolean brokerAvailable = new AtomicBoolean(); //доступность брокера
 
-    private SimpMessagingTemplate simpMessagingTemplate;
-    private UserMessageService userMessageService;
-    private UserService userService;
-
     @Autowired
+    private SimpMessagingTemplate simpMessagingTemplate;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private UserMessageService userMessageService;
+    @Autowired
+    private GroupService groupService;
+    @Autowired
+    private GroupMessageService groupMessageService;
+
     public MessagesWebsocketController(SimpMessagingTemplate simpMessagingTemplate,
                                        UserMessageService userMessageService,
                                        UserService userService) {
@@ -50,112 +57,77 @@ public class MessagesWebsocketController implements ApplicationListener<BrokerAv
         this.userService = userService;
     }
 
-    @Override
-    public void onApplicationEvent(BrokerAvailabilityEvent event) {
-        this.brokerAvailable.set(event.isBrokerAvailable());
-    }
-
-    @MessageMapping("/test")
-    @SendTo("/topic/test")
-    public TestMessage testMessage(@Payload TestMessage testMessage) {
-        log.debug("testMessage: " + testMessage.getUsername());// principal.getName());
-        System.out.println("testMessage: " + testMessage.getUsername() + ", " + testMessage);
-        return new TestMessage(testMessage.getUsername(),
-                testMessage.getEmail(), testMessage.getText());
-    }
-
-    @SubscribeMapping("/testsubscribe")
-    //@SendTo("/topic/testsubscribe")
-    public TestMessage testSubscribe(Principal principal, @Payload TestMessage testMessage) {
-        log.debug("testSubscribe: " + testMessage.getUsername());
-        System.out.println("testSubscribe: " + testMessage.getUsername() + ", " + testMessage + ", " + principal);
-//        return new TestMessage(testMessage.getUsername(),
-//                testMessage.getEmail(), "testSubscribe: " + testMessage.getText());
-        return new TestMessage("Bob", "b@b.com", "message from bob");
-    }
-
-    //@Scheduled(fixedDelay=7000)
-    public void sendTest() {
-        TestMessage user = new TestMessage("TestMessage", "email3", "sendTest");
-        if (log.isTraceEnabled()) {
-            log.trace("sendTest: " + user);
-        }
-        if (this.brokerAvailable.get()) {
-            log.debug("sendTest: " + user);
-            System.out.println("sendTest: " + user);
-
-            this.simpMessagingTemplate.convertAndSend("/topic/test." + "sendTest", user);
-        }
-    }
-
-    //@Scheduled(fixedDelay=10000)
-    public void sendToUserTest() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON);
-
-        TestMessage user = new TestMessage("TestMessage", "email4", "sendToUserTest");
-        if (this.brokerAvailable.get()) {
-            log.debug("sendToUserTest: " + user);
-            System.out.println("sendToUserTest: " + user);
-
-            String payload = "sendToUserTest: " + user.getUsername();
-            this.simpMessagingTemplate.convertAndSendToUser(user.getUsername(), "/queue/sendToUserTest", payload, map);
-        }
-    }
-
-    public void sendToUserTestError() {
-        TestMessage user = new TestMessage("TestMessage", "email5", "sendToUserTestError");
-        if (this.brokerAvailable.get()) {
-            log.debug("sendToUserTestError: " + user);
-            System.out.println("sendToUserTestError: " + user);
-
-            String payload = "sendToUserTestError: " + user;
-            this.simpMessagingTemplate.convertAndSendToUser(user.getUsername(), "/queue/errors", payload);
-        }
-    }
-
     @MessageMapping("/send") //Отправить новое сообщение
-    @SendToUser("/topic/send") //Событие "Новое сообщение"
-    public String clientSendMessage(Principal principal, @Payload ClientSendMessage message) {
+    @SendToUser("/queue/send") //Событие "Новое сообщение"
+    public String processMessageFromClient(@Payload ClientSendMessage message,
+                                           //@Headers Map headers,
+                                           //@Header("token") String token
+                                           @Header("simpUser") Authentication simpUser,
+                                           @Header("simpSessionId") String sessionId,
+                                           Principal principal) throws Exception {
         String response = "Error";
+        //Authentication a = (Authentication) headers.get("simpUser");
         if (message == null || message.getText() == null || message.getText().equals("")) {
             //TODO проверка на ошибки
+            response = "Error message";
         } else {
-            User sender = userService.getUserByUsername(principal.getName());
-            if (message.getGroup() != null && !message.getGroup().equals("")) {
-                //TODO запись сообщения для группы в бд
-                //TODO отправить сообщение группе
-                response = "messageId";
-            } else if (message.getRecipient() != null && !message.getRecipient().equals("")) {
-                User recipient = userService.getUserById(new ObjectId(message.getRecipient()));
-                if (recipient != null) {
-                    UserMessage userMessage = userMessageService.createMessage(sender, recipient, message.getText());
-                    response = userMessage.getId().toString();
+            User sender = userService.getUserByEmail(simpUser.getName());
+            if (sender != null) {
+                if (message.getGroup() != null && !message.getGroup().equals("")) {
+                    Group group = groupService.getGroup(new ObjectId(message.getGroup()));
+                    if (group != null) {
+                        GroupMessage groupMessage = groupMessageService.createMessage(sender, group, message.getText());
+                        response = groupMessage.getId().toString();
+                        //TODO отправить сообщение группе
+                        //TODO цикл по всем юзерам группы
+                        MessagePub messagePub = new MessagePub(groupMessage);
+                        this.simpMessagingTemplate.convertAndSend("/queue/new", messagePub);
+                    }
+                } else if (message.getRecipient() != null && !message.getRecipient().equals("")) {
+                    User recipient = userService.getUserById(new ObjectId(message.getRecipient()));
+                    if (recipient != null) {
+                        UserMessage userMessage = userMessageService.createMessage(sender, recipient, message.getText());
+                        response = userMessage.getId().toString();
 
-                    //TODO отправить сообщение получателю
-                    //send message Websocket
-                    this.simpMessagingTemplate.convertAndSend("/queue/new", message.getText());
+                        MessagePub messagePub = new MessagePub(userMessage);
+                        this.simpMessagingTemplate.convertAndSendToUser(recipient.getEmail(),"/queue/new", messagePub);
+                        //this.simpMessagingTemplate.convertAndSendToUser(sessionId,"/queue/new", messagePub);
+                    }
                 }
             }
         }
+        log.warn("processMessageFromClient: " + response);
         return response;
     }
 
     @MessageMapping("/read") //Прочитал сообщение
     @SendToUser("/queue/read") //Cобытие "Пользователь прочитал сообщение"
-    public ServerMessageRead clientMessageRead(@Payload ClientMessageRead message, SimpMessageHeaderAccessor headerAccessor) {
+    public ServerMessageRead processMessageRead(@Payload ClientMessageRead message,
+                                                SimpMessageHeaderAccessor headerAccessor) {
         headerAccessor.getSessionAttributes().put("username", message.getSender());
-        //TODO найти сообщение в бд и получить получателя
-        String recipient = "";
-        System.out.println("test readMessage: " + message.getSender());
-        System.out.println("test readMessage: " + HtmlUtils.htmlEscape(message.getSender()));
-        return new ServerMessageRead(message.getIdMessage(), recipient);
+        User sender = userService.getUserById(new ObjectId(message.getSender()));
+        if (sender != null) {
+            UserMessage userMessage = userMessageService.getMessage(new ObjectId(message.getId()));
+            User recipient = userMessage.getRecipient();
+            log.warn("processMessageRead: " + message.getSender());
+            System.out.println("processMessageRead: " + HtmlUtils.htmlEscape(message.getSender()));
+            return new ServerMessageRead(message.getId(), recipient.getId().toString());
+        }
+        return null;
     }
 
     @MessageExceptionHandler
     @SendToUser("/queue/errors")
     public String handleException(Throwable exception) {
+        log.error("handleException: " + exception.getMessage());
+        System.out.println("handleException : " + exception.getMessage());
         return exception.getMessage();
+    }
+
+
+    @Override
+    public void onApplicationEvent(BrokerAvailabilityEvent event) {
+        this.brokerAvailable.set(event.isBrokerAvailable());
     }
 
 
@@ -179,6 +151,7 @@ public class MessagesWebsocketController implements ApplicationListener<BrokerAv
         private String text;
         private String group;
         private String recipient;
+        private String messageid;
     }
 
     @Getter
@@ -186,7 +159,7 @@ public class MessagesWebsocketController implements ApplicationListener<BrokerAv
     @NoArgsConstructor
     @AllArgsConstructor
     private static class ClientMessageRead {
-        private String idMessage;
+        private String id;
         private String sender;
     }
 
@@ -195,7 +168,13 @@ public class MessagesWebsocketController implements ApplicationListener<BrokerAv
     @NoArgsConstructor
     @AllArgsConstructor
     private static class ServerMessageRead {
-        private String idMessage;
+        private String id;
         private String recipient;
     }
 }
+
+//example
+//   @MessageMapping("/myHandler/{username}")
+//public void handleTextMessage(@DestinationVariable String username,Message message) {
+//        //do something
+//        }

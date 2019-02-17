@@ -1,6 +1,6 @@
 package ru.geekbrains.pocket.backend.controller.rest;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-@Slf4j
+@Log4j2
 @RestController
 @RequestMapping("/api")
 //@CrossOrigin(origins = "http://localhost:9000")

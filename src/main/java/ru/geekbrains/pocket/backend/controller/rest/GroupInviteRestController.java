@@ -3,7 +3,7 @@ package ru.geekbrains.pocket.backend.controller.rest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,7 +19,7 @@ import ru.geekbrains.pocket.backend.util.RandomString;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Slf4j
+@Log4j2
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/groups")

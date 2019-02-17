@@ -1,8 +1,8 @@
 package ru.geekbrains.pocket.backend.service.impl;
 
-import com.mongodb.MongoServerException;
+import org.springframework.dao.DuplicateKeyException;
 import com.mongodb.MongoWriteException;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -23,7 +23,7 @@ import ru.geekbrains.pocket.backend.service.UserService;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
+@Log4j2
 @Service
 public class UserServiceImpl implements UserService {
     private final static String ROLE_USER = "ROLE_USER";
@@ -44,6 +44,23 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean checkIfValidOldPassword(User user, String oldPassword) {
         return passwordEncoder.matches(oldPassword, user.getPassword());
+    }
+
+    @Override
+    public User createUserAccount(String email, String password, String name)
+            throws UserAlreadyExistException, DuplicateKeyException, MongoWriteException {
+        if (userRepository.findByEmail(email) != null) {
+            throw new UserAlreadyExistException("There is an account with that email adress: " + email);
+        }
+
+        User user = new User();
+
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password)); //получаем хэш пароля
+        //user.setUsing2FA(account.isUsing2FA());
+        user.setProfile(new UserProfile(name));
+        user.setRoles(Arrays.asList(getRoleUser()));
+        return userRepository.insert(user);
     }
 
     @Override
@@ -116,28 +133,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.insert(user);
     }
 
-    @Override
-    public User createUserAccount(String email, String password, String name)
-            throws UserAlreadyExistException, MongoServerException {
-        if (userRepository.findByEmail(email) != null) {
-            throw new UserAlreadyExistException("There is an account with that email adress: " + email);
-        }
-
-        final User user = new User();
-
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password)); //получаем хэш пароля
-        //user.setUsing2FA(account.isUsing2FA());
-        user.setProfile(new UserProfile(name));
-        user.setRoles(Arrays.asList(getRoleUser()));
-        try {
-            return userRepository.insert(user);
-        } catch (MongoServerException ex) {// MongoWriteException, DuplicateKeyException
-            log.error(ex.getMessage());
-        }
-        return null;
-    }
-
     private Role getRoleUser() {
         Role roleUser = roleRepository.findByName(ROLE_USER);
         if (roleUser == null)
@@ -153,53 +148,6 @@ public class UserServiceImpl implements UserService {
             log.error(ex.getMessage());
         }
         return null;
-    }
-
-
-    @Override
-    public String updateUserProfile(User user, UserProfile userProfile) {
-        User updatingUser = userRepository.findByEmailMatches(user.getEmail());
-        if (updatingUser != null) {
-            updatingUser.setProfile(userProfile);
-            return userRepository.save(updatingUser).getId().toString();
-
-        } else return "user not found";
-    }
-
-    @Override
-    public String updateUserFullName(User user, String fullName) {
-        User updatingUser = userRepository.findByEmailMatches(user.getEmail());
-        if (updatingUser != null) {
-            UserProfile thisUserProfile = updatingUser.getProfile();
-            thisUserProfile.setFullName(fullName);
-            updatingUser.setProfile(thisUserProfile);
-            return userRepository.save(updatingUser).getId().toString();
-
-        } else return "user not found";
-    }
-
-    @Override
-    public String updateUserUsername(User user, String username) {
-        User updatingUser = userRepository.findByEmailMatches(user.getEmail());
-        if (updatingUser != null) {
-            UserProfile thisUserProfile = updatingUser.getProfile();
-            thisUserProfile.setUsername(username);
-            updatingUser.setProfile(thisUserProfile);
-            return userRepository.save(updatingUser).getId().toString();
-
-        } else return "user not found";
-    }
-
-    @Override
-    public String updateUsersLastSeen(User user, Date date) {
-        User updatingUser = userRepository.findByEmailMatches(user.getEmail());
-        if (updatingUser != null) {
-            UserProfile thisUserProfile = updatingUser.getProfile();
-            thisUserProfile.setLastSeen(date);
-            updatingUser.setProfile(thisUserProfile);
-            return userRepository.save(updatingUser).getId().toString();
-
-        } else return "user not found";
     }
 
     @Override

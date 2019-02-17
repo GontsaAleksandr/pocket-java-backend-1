@@ -151,7 +151,7 @@ public class StandaloneMessagesWebsocketControllerTests {
         //тело отправляемого сообщения от клиента
         MessagesWebsocketController.ClientSendMessage clientSendMessage = new MessagesWebsocketController.ClientSendMessage();
         clientSendMessage.setText(textMessage);
-        //clientSendMessage.setGroup("");
+        //processMessageFromClient.setGroup("");
         clientSendMessage.setRecipient(userService.getUserByUsername("Alex").getId().toString());
 
         byte[] payload = new ObjectMapper().writeValueAsBytes(clientSendMessage);

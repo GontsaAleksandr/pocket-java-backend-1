@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserBlacklist;
-import ru.geekbrains.pocket.backend.domain.db.UserContact;
 import ru.geekbrains.pocket.backend.repository.UserBlacklistRepository;
 import ru.geekbrains.pocket.backend.service.UserBlacklistService;
 

@@ -5,31 +5,26 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
-import ru.geekbrains.pocket.backend.domain.db.Privilege;
-import ru.geekbrains.pocket.backend.domain.db.Role;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserToken;
 import ru.geekbrains.pocket.backend.domain.pub.UserPub;
 import ru.geekbrains.pocket.backend.enumeration.TokenStatus;
 import ru.geekbrains.pocket.backend.exception.UserAlreadyExistException;
+import ru.geekbrains.pocket.backend.security.AuthenticationUser;
 import ru.geekbrains.pocket.backend.service.UserService;
 import ru.geekbrains.pocket.backend.service.UserTokenService;
 import ru.geekbrains.pocket.backend.util.validation.ValidEmail;
@@ -39,10 +34,12 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-@Slf4j
+@Log4j2
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/auth")
@@ -83,9 +80,9 @@ public class AuthRestController {
         UserToken userToken = userTokenService.getValidToken(user);
 
         try {
-            authWithoutPassword(user);
+            AuthenticationUser.authWithoutPassword(user);
         } catch (AuthenticationException ex){
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
         }
 
         return new ResponseEntity<>(new RegistrationResponse(userToken.getToken(), new UserPub(userToken.getUser())), HttpStatus.OK);
@@ -115,20 +112,24 @@ public class AuthRestController {
             user = userService.createUserAccount(registrationRequest.getEmail(),
                     registrationRequest.getPassword(),
                     registrationRequest.getName());
-        } catch (UserAlreadyExistException e) {
-            log.debug("Email already exists.");
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        } catch (MongoServerException e) {// MongoWriteException, DuplicateKeyException
-            log.debug("Email write to db user " + registrationRequest);
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            if (user == null){
+                log.debug("Error write to db:" + registrationRequest);
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        } catch (UserAlreadyExistException ex) {
+            log.debug("Email already exists: " + registrationRequest);
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.CONFLICT);
+        } catch (DuplicateKeyException | MongoServerException ex) {
+            log.debug("Error write to db:" + registrationRequest);
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.CONFLICT);
         }
 
         UserToken userToken = userTokenService.getNewToken(user);
 
         try {
-            authWithoutPassword(user);
+            AuthenticationUser.authWithoutPassword(user);
         } catch (AuthenticationException ex){
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
         }
 
         //отправка электронного письма с запросом подтверждения email
@@ -156,7 +157,7 @@ public class AuthRestController {
             // model.addAttribute("qr", userService.generateQRUrl(user));
             // return "redirect:/qrcode.html?lang=" + locale.getLanguage();
             // }
-            authWithoutPassword(user);
+            AuthenticationUser.authWithoutPassword(user);
             return new ResponseEntity<>(HttpStatus.OK);
         }
 
@@ -200,43 +201,13 @@ public class AuthRestController {
         return "http://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
     }
 
-    //аутентификация в Spring
-    public void authWithoutPassword(User user) throws AuthenticationException {
-        List<Privilege> privileges = user.getRoles().stream()
-                .map(Role::getPrivileges)
-                .flatMap(Collection::stream).distinct().collect(Collectors.toList());
-        List<GrantedAuthority> authorities = privileges.stream().map(
-                p -> new SimpleGrantedAuthority(p.getName())).collect(Collectors.toList());
-
-        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
-
-    public void authWithPassword(User user) throws AuthenticationException {
-        List<Privilege> privileges = user.getRoles().stream()
-                .map(Role::getPrivileges)
-                .flatMap(Collection::stream).distinct().collect(Collectors.toList());
-        List<GrantedAuthority> authorities = privileges.stream().map(
-                p -> new SimpleGrantedAuthority(p.getName())).collect(Collectors.toList());
-
-        //https://www.baeldung.com/manually-set-user-authentication-spring-security
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword(), authorities);
-//        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-//        HttpSession session = request.getSession(true);
-//        session.setAttribute("SPRING_SECURITY_CONTEXT", sc);
-    }
-
     //===== Request & Response =====
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class LoginRequest {
+    public static class LoginRequest {
 
         @NotNull
         @ValidEmail
@@ -251,7 +222,7 @@ public class AuthRestController {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class RegistrationRequest {
+    public static class RegistrationRequest {
         @NotNull
         @ValidEmail //(message = "email names must comply with the standard")
         @Size(min = 6, max = 32)

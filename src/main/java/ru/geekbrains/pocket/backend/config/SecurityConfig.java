@@ -8,17 +8,21 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.token.ClientKeyGenerator;
 import org.springframework.security.oauth2.client.token.DefaultClientKeyGenerator;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import ru.geekbrains.pocket.backend.security.*;
 import ru.geekbrains.pocket.backend.security.token.JwtAuthenticationFilter;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -50,6 +54,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Override
+    public void configure(WebSecurity web) throws Exception {
+        super.configure(web);
+        web.httpFirewall(allowHttpMethodsFirewall());
+    }
+
+    @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.authenticationProvider(authenticationProvider());
     }
@@ -59,25 +69,27 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .cors().and()
             .csrf().disable()   //Межсайтовая подделка запроса
+                //.anonymous().disable()
                 .exceptionHandling()
                 .accessDeniedHandler(accessDeniedHandler)
                 .authenticationEntryPoint(restAuthenticationEntryPoint)
-                .and()
-//            .headers().frameOptions().sameOrigin()
-//                .and()
-            .addFilterAfter(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class)
+            .and()
+//                .authenticationProvider(authenticationProvider())
+//                .addFilterBefore(new AuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class)
+//                .addFilterBefore(new ManagementEndpointAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class)
+                .addFilterAfter(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class)
             .authorizeRequests()
             //более конкретные правила должны стоять первыми, а затем более общие
                 .antMatchers("/auth/**").permitAll() //rest
+                .antMatchers("/socket/**").permitAll() //websocket
+                //.antMatchers("/test/**").permitAll() //websocket
                 .antMatchers("/**").hasAnyRole("ADMIN", "USER")
-                .antMatchers("/test/**").permitAll() //websocket
                 //.anyRequest().hasAuthority("READ_PRIVILEGE")
                 .anyRequest().authenticated()
             .and()
             .formLogin()
                 //.passwordParameter("")
-                .defaultSuccessUrl("/homepage.html")
-                .loginPage("/login")
+                .loginPage("/auth/login")
                 .successHandler(customAuthenticationSuccessHandler)
                 .failureHandler(customAuthenticationFailureHandler)
                 .permitAll()
@@ -87,10 +99,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .invalidateHttpSession(false)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
+//            .and() //не нужно из-за websocket http://qaru.site/questions/10468988/failed-to-create-websocket-connection-when-spring-security-is-on
+//                .sessionManagement() //https://www.baeldung.com/spring-security-session
+//                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
-                .sessionManagement() //https://www.baeldung.com/spring-security-session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//        https://www.baeldung.com/spring-security-websockets
+                .headers().frameOptions().sameOrigin()
         ;
+    }
+
+    @Bean
+    public HttpFirewall allowHttpMethodsFirewall() {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+        firewall.setAllowedHttpMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "LINK", "UNLINK"));
+        return firewall;
     }
 
     @Bean

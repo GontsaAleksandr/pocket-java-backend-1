@@ -18,10 +18,14 @@ class HttpRequestComponent {
 
     User getUserFromToken(HttpServletRequest request) throws UserNotFoundException {
         String header = request.getHeader(HEADER_STRING);
-        String authToken = null;
+        String token = null;
         if (header != null && header.startsWith(TOKEN_PREFIX)) {
-            authToken = header.replace(TOKEN_PREFIX, "");
+            token = header.replace(TOKEN_PREFIX, "");
         }
-        return userTokenService.getUserByToken(authToken);
+        return userTokenService.getUserByToken(token);
+    }
+
+    User getUserFromToken(String token) throws UserNotFoundException {
+        return userTokenService.getUserByToken(token);
     }
 }

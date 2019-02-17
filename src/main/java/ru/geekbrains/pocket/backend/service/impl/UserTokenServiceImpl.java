@@ -1,6 +1,6 @@
 package ru.geekbrains.pocket.backend.service.impl;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,7 +24,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Optional;
 
-@Slf4j
+@Log4j2
 @Service
 public class UserTokenServiceImpl implements UserTokenService {
 
@@ -54,9 +54,11 @@ public class UserTokenServiceImpl implements UserTokenService {
 
     @Override
     public User getUserByToken(String token) {
-        final UserToken UserToken = userTokenRepository.findByToken(token);
-        if (UserToken != null) {
-            return UserToken.getUser();
+        if (token != null && !token.equals("")) {
+            final UserToken UserToken = userTokenRepository.findByToken(token);
+            if (UserToken != null) {
+                return UserToken.getUser();
+            }
         }
         return null;
     }
