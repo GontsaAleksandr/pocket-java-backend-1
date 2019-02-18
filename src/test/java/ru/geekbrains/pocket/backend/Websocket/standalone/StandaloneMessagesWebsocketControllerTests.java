@@ -157,7 +157,7 @@ public class StandaloneMessagesWebsocketControllerTests {
         byte[] payload = new ObjectMapper().writeValueAsBytes(clientSendMessage);
 
 /*		//нужно подписаться на ответ по "/topic/send"
-		StompHeaderAccessor headers1 = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+		StompHeaderAccessor headers1 = StompHeaderAccessor.createRoleIfNotFound(StompCommand.SUBSCRIBE);
 		headers1.setSubscriptionId("0");
 		headers1.setDestination("/app/topic/send");
 		headers1.setSessionId("0");

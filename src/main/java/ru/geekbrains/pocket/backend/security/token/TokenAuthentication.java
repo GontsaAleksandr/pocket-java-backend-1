@@ -58,7 +58,7 @@ public class TokenAuthentication { //implements Authentication {
 //        isAuthenticated = b;
 //    }
 //
-//    public String getToken() {
+//    public String getUserToken() {
 //        return token;
 //    }
 

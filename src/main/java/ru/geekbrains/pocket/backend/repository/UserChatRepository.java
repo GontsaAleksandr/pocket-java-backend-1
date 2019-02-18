@@ -10,6 +10,11 @@ import ru.geekbrains.pocket.backend.domain.db.UserChat;
 import java.util.List;
 
 public interface UserChatRepository extends MongoRepository<UserChat, ObjectId> {
+
+    UserChat findFirstByUserAndGroup(User user, Group group);
+
+    UserChat findFirstByUserAndDirect(User user, User direct);
+
     List<UserChat> findByGroup(Group group);
 
     List<UserChat> findByUser(User user);

@@ -52,28 +52,27 @@ public class SetupDataLoader implements ApplicationListener<ContextRefreshedEven
             return;
         }
 
-        //userRepository.deleteAll();
-        //userRepository.deleteByEmail("a@mail.ru");
-        //userTokenService.deleteAllUserToken();
-        userChatService.deleteAllUserChats();
-        userMessageService.deleteAllMessages();
-        //groupService.deleteAllGroups();
-        groupMessageService.deleteAllMessages();
+//        userService.deleteAll();
+//        userTokenService.deleteAllUserToken();
+//        userChatService.deleteAllUserChats();
+//        userMessageService.deleteAllMessages();
+//        groupService.deleteAllGroups();
+//        groupMessageService.deleteAllMessages();
 
-        // == create initial privileges
+        // == createRoleIfNotFound initial privileges
         final Privilege readPrivilege = createPrivilegeIfNotFound("READ_PRIVILEGE");
         final Privilege writePrivilege = createPrivilegeIfNotFound("WRITE_PRIVILEGE");
         final Privilege passwordPrivilege = createPrivilegeIfNotFound("CHANGE_PASSWORD_PRIVILEGE");
 
-        // == create initial roles
+        // == createRoleIfNotFound initial roles
         final List<Privilege> adminPrivileges = new ArrayList<>(Arrays.asList(readPrivilege, writePrivilege, passwordPrivilege));
         final List<Privilege> userPrivileges = new ArrayList<>(Arrays.asList(readPrivilege, passwordPrivilege));
         final Role adminRole = createRoleIfNotFound("ROLE_ADMIN", adminPrivileges);
         final Role userRole = createRoleIfNotFound("ROLE_USER", userPrivileges);
 
-        // == create initial user
-        User user1 = createUserIfNotFound("test@test.com", "Test", "Test1234", Arrays.asList(adminRole));
-        User user2 = createUserIfNotFound("a@mail.ru", "Alex", "Abc12345", Arrays.asList(adminRole));
+        // == createRoleIfNotFound initial user
+        User user1 = createUserIfNotFound("test@test.com", "Test", "Test1234", Arrays.asList(adminRole, userRole));
+        User user2 = createUserIfNotFound("a@mail.ru", "Alex", "Abc12345", Arrays.asList(adminRole, userRole));
         User user3 = createUserIfNotFound("b@mail.ru", "Bob", "Abc12345", Arrays.asList(userRole));
         User user4 = createUserIfNotFound("i@mail.ru", "ivan", "Qwe12345", Arrays.asList(userRole));
 
@@ -132,10 +131,10 @@ public class SetupDataLoader implements ApplicationListener<ContextRefreshedEven
         Role role = roleRepository.findByName(name);
         if (role == null) {
             role = new Role(name);
+            role.setPrivileges(privileges);
+            role = roleRepository.save(role);
+            log.info("Preloading " + role);
         }
-        role.setPrivileges(privileges);
-        role = roleRepository.save(role);
-        log.info("Preloading " + role);
         return role;
     }
 
@@ -148,33 +147,40 @@ public class SetupDataLoader implements ApplicationListener<ContextRefreshedEven
             user.setPassword(passwordEncoder.encode(password));
             user.setProfile(new UserProfile(userName));
             user.setEnabled(true);
+            user.setRoles(roles);
+            user = userService.update(user);
+            log.info("Preloading " + user);
         }
-        user.setRoles(roles);
-        user = userService.update(user);
-        log.info("Preloading " + user);
         return user;
     }
 
     @Transactional
     private UserToken createTokenForUserIfNotFound(User user) {
-        UserToken userToken = userTokenService.getToken(user);
+        UserToken userToken = userTokenService.getUserToken(user, "0.0.0.0");
         if (userToken == null) {
-            userToken = userTokenService.createTokenForUser(user);
+            userToken = userTokenService.createOrUpdateToken(user, "0.0.0.0");
+            log.info("Preloading for user '" + user.getEmail() + "' " + userToken);
         }
         return userToken;
     }
 
     @Transactional
     private UserChat createUserChat(User user, User direct, User sender) {
-        UserChat userChat = new UserChat(user, direct, sender);
-        log.info("Preloading " + userChat);
-        return userChatService.insert(userChat);
+        UserChat userChat = userChatService.getUserChat(user, direct);
+        if (userChat == null) {
+            userChat = userChatService.createUserChat(user, direct, sender);
+            log.info("Preloading " + userChat);
+        }
+        return userChat;
     }
 
     @Transactional
     private UserMessage createUserMessage(User sender, User recipient, String text) {
-        UserMessage message = userMessageService.createMessage(sender, recipient, text);
-        log.info("Preloading " + message);
+        UserMessage message = userMessageService.getMessage(sender, recipient, text);
+        if (message == null) {
+            message = userMessageService.createMessage(sender, recipient, text);
+            log.info("Preloading " + message);
+        }
         return message;
     }
 
@@ -200,14 +206,22 @@ public class SetupDataLoader implements ApplicationListener<ContextRefreshedEven
 
     @Transactional
     private GroupMessage createGroupMessage(User sender, Group group, String text) {
-        GroupMessage message = groupMessageService.createMessage(sender, group, text);
-        log.info("Preloading " + message);
+        GroupMessage message = groupMessageService.getMessage(sender, group, text);
+        if (message == null) {
+            message = groupMessageService.createMessage(sender, group, text);
+            log.info("Preloading " + message);
+        }
         return message;
     }
 
     @Transactional
     private UserContact createUserContact(User user, User contact){
-        return userContactService.createUserContact(user, contact);
+        UserContact userContact = userContactService.getUserContact(user, contact);
+        if (userContact == null) {
+            userContact = userContactService.createUserContact(user, contact);
+            log.info("Preloading " + userContact);
+        }
+        return userContact;
     }
 
 //    @Bean

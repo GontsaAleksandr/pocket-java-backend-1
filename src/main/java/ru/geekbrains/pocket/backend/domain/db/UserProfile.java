@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.Date;
 
 //this class for class User (collection = "users")
@@ -22,10 +23,12 @@ import java.util.Date;
 public class UserProfile {
     @NotNull
     @NotEmpty
+    @Size(min = 2, max = 32)
     @Indexed(unique = true)
     private String username;
 
     @NotEmpty
+    @Size(min = 2, max = 32)
     @Field("fullname")
     private String fullName;
 

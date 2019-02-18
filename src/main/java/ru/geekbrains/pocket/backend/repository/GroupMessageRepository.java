@@ -12,6 +12,8 @@ import java.util.List;
 @Repository
 public interface GroupMessageRepository extends MongoRepository<GroupMessage, ObjectId> {
 
+    GroupMessage findFirstBySenderAndGroupAndText(User sender, Group group, String text);
+
     List<GroupMessage> findBySender(User sender);
 
     List<GroupMessage> findByGroup(Group group);

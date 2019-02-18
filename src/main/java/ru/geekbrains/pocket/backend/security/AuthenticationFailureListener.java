@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 public class AuthenticationFailureListener implements ApplicationListener<AuthenticationFailureBadCredentialsEvent> {
     @Autowired
     private HttpServletRequest request;
-
     @Autowired
     private LoginAttemptService loginAttemptService;
 

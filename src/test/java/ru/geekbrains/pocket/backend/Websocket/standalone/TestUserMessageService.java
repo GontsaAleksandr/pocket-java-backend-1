@@ -71,6 +71,11 @@ public class TestUserMessageService implements UserMessageService {
     }
 
     @Override
+    public UserMessage getMessage(User sender, User recipient, String text) {
+        return null;
+    }
+
+    @Override
     public List<UserMessage> getAllMessagesUser(User user) {
         return null;
     }

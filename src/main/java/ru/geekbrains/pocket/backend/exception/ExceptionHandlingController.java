@@ -27,6 +27,7 @@ public class ExceptionHandlingController {
             reason = "Data integrity violation")  // 409
     @ExceptionHandler(DataIntegrityViolationException.class)
     public void conflict() {
+        log.error("409: Data integrity violation");
         // Nothing to do
     }
 
@@ -38,6 +39,7 @@ public class ExceptionHandlingController {
         // Note that the exception is NOT available to this view (it is not added
         // to the model) but see "Extending ExceptionHandlerExceptionResolver"
         // below.
+        log.error("databaseError");
         return "databaseError";
     }
 

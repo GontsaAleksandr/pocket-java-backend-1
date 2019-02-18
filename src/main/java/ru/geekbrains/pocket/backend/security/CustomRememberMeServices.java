@@ -1,5 +1,6 @@
 package ru.geekbrains.pocket.backend.security;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.RememberMeAuthenticationToken;
@@ -20,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Date;
 
+@Log4j2
 public class CustomRememberMeServices extends PersistentTokenBasedRememberMeServices {
 
     @Autowired
@@ -39,13 +41,13 @@ public class CustomRememberMeServices extends PersistentTokenBasedRememberMeServ
     @Override
     protected void onLoginSuccess(HttpServletRequest request, HttpServletResponse response, Authentication successfulAuthentication) {
         String username = ((User) successfulAuthentication.getPrincipal()).getEmail();
-        logger.debug("Creating new persistent login for user " + username);
+        log.debug("Creating new persistent login for user " + username);
         PersistentRememberMeToken persistentToken = new PersistentRememberMeToken(username, generateSeriesData(), generateTokenData(), new Date());
         try {
             tokenRepository.createNewToken(persistentToken);
             addCookie(persistentToken, request, response);
         } catch (Exception e) {
-            logger.error("Failed to insert persistent token ", e);
+            log.error("Failed to createUserChat persistent token ", e);
         }
     }
 

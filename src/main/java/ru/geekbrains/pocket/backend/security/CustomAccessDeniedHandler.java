@@ -20,11 +20,10 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException exc) throws IOException, ServletException {
         response.setStatus(403);
 
-        Authentication auth = SecurityContextHolder.getContext()
-                .getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null) {
             log.warn("User '" + auth.getName() + "' attempted to access the protected URL: "
-                    + request.getScheme() + "://" + request.getLocalAddr() + ":" + request.getServerPort() + request.getRequestURI());
+                    + request.getScheme() + "://" + request.getRemoteHost() + ":" + request.getServerPort() + request.getRequestURI());
         }
 
         response.getWriter().flush();

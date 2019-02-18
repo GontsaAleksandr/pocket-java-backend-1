@@ -8,11 +8,17 @@ import java.util.List;
 
 public interface UserChatService {
 
+    UserChat createUserChat(UserChat userChat);
+
+    UserChat createUserChat(User user, User direct, User sender);
+
+    UserChat getUserChat(User user, Group group);
+
+    UserChat getUserChat(User user, User direct);
+
     List<UserChat> getUserChats(Group group);
 
     List<UserChat> getUserChats(User user);
-
-    UserChat insert(UserChat userChat);
 
     void deleteAllUserChats();
 }

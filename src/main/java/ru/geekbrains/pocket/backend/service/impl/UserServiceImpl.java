@@ -1,10 +1,10 @@
 package ru.geekbrains.pocket.backend.service.impl;
 
-import org.springframework.dao.DuplicateKeyException;
 import com.mongodb.MongoWriteException;
 import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,26 +12,29 @@ import ru.geekbrains.pocket.backend.domain.db.Role;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserProfile;
 import ru.geekbrains.pocket.backend.exception.InvalidOldPasswordException;
-import ru.geekbrains.pocket.backend.exception.RoleNotFoundException;
 import ru.geekbrains.pocket.backend.exception.UserAlreadyExistException;
 import ru.geekbrains.pocket.backend.exception.UserNotFoundException;
-import ru.geekbrains.pocket.backend.repository.RoleRepository;
 import ru.geekbrains.pocket.backend.repository.UserRepository;
+import ru.geekbrains.pocket.backend.repository.UserTokenRepository;
 import ru.geekbrains.pocket.backend.resource.UserResource;
+import ru.geekbrains.pocket.backend.service.RoleService;
 import ru.geekbrains.pocket.backend.service.UserService;
 
-import java.util.*;
+import javax.validation.constraints.NotNull;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Log4j2
 @Service
 public class UserServiceImpl implements UserService {
-    private final static String ROLE_USER = "ROLE_USER";
-
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private RoleRepository roleRepository;
+    private RoleService roleService;
+    @Autowired
+    private UserTokenRepository userTokenRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -54,27 +57,37 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = new User();
-
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password)); //получаем хэш пароля
         //user.setUsing2FA(account.isUsing2FA());
         user.setProfile(new UserProfile(name));
-        user.setRoles(Arrays.asList(getRoleUser()));
+        user.setRoles(Arrays.asList(roleService.getRoleUser()));
         return userRepository.insert(user);
     }
 
     @Override
     public void delete(ObjectId id) throws RuntimeException {
-        Optional<User> user = userRepository.findById(id);
-        if (!user.isPresent()) {
-            throw new UserNotFoundException("User with id = " + id + " not found");
-        }
-        userRepository.delete(user.get());
+        deleteCascade(getUserById(id));
     }
 
     @Override
     public void delete(String email) {
-        userRepository.deleteByEmail(email);
+        deleteCascade(getUserByEmail(email));
+    }
+
+    @Override
+    public void deleteAll() {
+        userRepository.deleteAll();
+    }
+
+    private void deleteCascade(User user) {
+        if (user != null ) {
+            userRepository.deleteById(user.getId());
+ //           UserToken userToken = userTokenRepository.findByUser(user);
+  //          if (userToken != null)
+                userTokenRepository.deleteByUser(user);
+            //TODO каскадное удаление
+        }
     }
 
     @Override
@@ -91,31 +104,27 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUserById(ObjectId id) throws RuntimeException {
-        //TODO исправить
-        if (userRepository.findById(id).isPresent()) {
-            User user = userRepository.findById(id)
-                    .orElseThrow(
-                            () -> new UserNotFoundException("User with id = " + id + " not found"));
-            return user;
-        }
-        return null;
+    public User getUserById(ObjectId id) {
+//        //TODO исправить
+//        if (userRepository.findById(id).isPresent()) {
+//            return userRepository.findById(id).orElseThrow(
+//                            () -> new UserNotFoundException("User with id = " + id + " not found"));
+//        }
+        Optional<User> user = userRepository.findById(id);
+        return user.orElse(null);
     }
 
     @Override
-    public User getUserByEmail(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email);
-//        user = Optional.of(user).orElseThrow(
-//                () -> new UserNotFoundException("User with email = " + email + " not found"));
-        return user;
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Override
     public User getUserByUsername(String username) throws RuntimeException {
         //User user2 = userRepository.findFirstByUsername(username);
-        User user = Optional.of(userRepository.findByProfileUsername(username)).orElseThrow(
-                () -> new UserNotFoundException("User with username = '" + username + "' not found"));
-        return user;
+//        User user = Optional.of(userRepository.findByProfileUsername(username)).orElseThrow(
+//                () -> new UserNotFoundException("User with username = '" + username + "' not found"));
+        return userRepository.findByProfileUsername(username);
     }
 
     @Override
@@ -127,37 +136,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User insert(User user) throws RuntimeException {
-        Role role = Optional.of(roleRepository.findByName("ROLE_USER")).orElseThrow(
-                () -> new RoleNotFoundException("Role with name = 'ROLE_USER' not found."));
-        user.setRoles(Collections.singletonList(role));
+        if (user.getRoles() == null)
+            user.setRoles(Arrays.asList(roleService.getRoleUser()));
         return userRepository.insert(user);
     }
 
-    private Role getRoleUser() {
-        Role roleUser = roleRepository.findByName(ROLE_USER);
-        if (roleUser == null)
-            roleUser = roleRepository.insert(new Role(ROLE_USER));
-        return roleUser;
-    }
 
     @Override
-    public User update(User user) throws MongoWriteException {
-        try {
+    public User update(User user) throws DuplicateKeyException, MongoWriteException {
+        //try {
             return userRepository.save(user);
-        } catch (MongoWriteException ex) {
-            log.error(ex.getMessage());
-        }
-        return null;
+        //} catch (MongoWriteException ex) {
+            //log.error(ex.getMessage());
+        //}
+        //return null;
     }
 
     @Override
-    public User updateNameAndPassword(User user, String name, String oldPassword, String newPassword)
-            throws InvalidOldPasswordException {
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new InvalidOldPasswordException("Old & current password does not match!");
+    public User updateNameAndPassword(@NotNull User user, String name, String oldPassword, String newPassword)
+            throws InvalidOldPasswordException, DuplicateKeyException, MongoWriteException {
+        if (name != null) user.getProfile().setUsername(name);
+        if (oldPassword != null && newPassword != null) {
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                throw new InvalidOldPasswordException("The current password specified is incorrect!");
+            }
+            user.setPassword(passwordEncoder.encode(newPassword));
         }
-        user.getProfile().setUsername(name);
-        user.setPassword(passwordEncoder.encode(newPassword));
         return update(user);
     }
 

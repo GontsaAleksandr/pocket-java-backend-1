@@ -2,11 +2,13 @@ package ru.geekbrains.pocket.backend.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 
+@Log4j2
 public class ConverterJSON {
 
     private final static String baseFile = "user.json";
@@ -39,7 +41,7 @@ public class ConverterJSON {
     public static void toJSONinFile(Object object) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.writeValue(new File(baseFile), object);
-        System.out.println("json created!");
+        log.debug("json created!");
     }
 
     public static <T> T toJavaObject(Class<T> valueType) throws IOException {

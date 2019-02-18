@@ -23,7 +23,7 @@ public class TokenAuthenticationManager { //implements AuthenticationManager {
 //    }
 //
 //    private TokenAuthentication processAuthentication(TokenAuthentication authentication) throws AuthenticationException {
-//        String token = authentication.getToken();
+//        String token = authentication.getUserToken();
 //        String key = "key123";
 //        DefaultClaims claims;
 //        try {
@@ -45,7 +45,7 @@ public class TokenAuthenticationManager { //implements AuthenticationManager {
 //        if (user.isEnabled()) {
 //            Collection<GrantedAutority> authorities = user.getAuthorities();
 //            TokenAuthentication fullTokenAuthentication =
-//                    new TokenAuthentication(authentication.getToken(), authorities, true, user);
+//                    new TokenAuthentication(authentication.getUserToken(), authorities, true, user);
 //            return fullTokenAuthentication;
 //        } else {
 //            throw new AuthenticationServiceException("User disabled");;

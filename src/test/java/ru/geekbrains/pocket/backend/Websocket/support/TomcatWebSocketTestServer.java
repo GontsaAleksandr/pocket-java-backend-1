@@ -75,7 +75,7 @@ public class TomcatWebSocketTestServer implements WebSocketTestServer {
             file.deleteOnExit();
             return file;
         } catch (IOException ex) {
-            throw new RuntimeException("Unable to create temp directory", ex);
+            throw new RuntimeException("Unable to createRoleIfNotFound temp directory", ex);
         }
     }
 

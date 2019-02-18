@@ -8,7 +8,10 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -22,38 +25,38 @@ public class UserToken {
     @Id
     private ObjectId id;
 
+    @NotNull
+    @Valid
     @DBRef
     private User user;
 
-    @Indexed
-    private String token;
+    @NotNull
+    @Indexed(unique = true)
+    private String token; //несколько токенов на разные устройства
 
-    private String user_ip;
+    @Field("user_ip")
+    private String userip = "0.0.0.0";
 
     private String agent;
 
-    private Date logged_at = new Date();
+    @Field("loggedAt")
+    private Date loggedAt = new Date();
 
+    //TODO убрать лишнее
     private Date expiryDate;
 
     public UserToken(final String token) {
-        super();
-
         this.token = token;
         this.expiryDate = calculateExpiryDate(EXPIRATION);
     }
 
     public UserToken(final String token, final User user) {
-        super();
-
         this.token = token;
         this.user = user;
         this.expiryDate = calculateExpiryDate(EXPIRATION);
     }
 
     public UserToken(final String token, final User user, final Date expiryDate) {
-        super();
-
         this.token = token;
         this.user = user;
         this.expiryDate = expiryDate;
@@ -68,13 +71,13 @@ public class UserToken {
 
     public void updateToken(final String token) {
         this.token = token;
-        this.logged_at = new Date();
+        this.loggedAt = new Date();
         this.expiryDate = calculateExpiryDate(EXPIRATION);
     }
 
     public void updateToken(final String token, final Date expiryDate) {
         this.token = token;
-        this.logged_at = new Date();
+        this.loggedAt = new Date();
         this.expiryDate = expiryDate;
     }
 
@@ -82,7 +85,7 @@ public class UserToken {
     public String toString() {
         final StringBuilder builder = new StringBuilder();
         builder.append("Token [String=").append(token).append("]")
-                .append("[logged_at=").append(expiryDate).append("]")
+                .append("[loggedAt=").append(expiryDate).append("]")
                 .append("[Expires=").append(expiryDate).append("]");
         return builder.toString();
     }

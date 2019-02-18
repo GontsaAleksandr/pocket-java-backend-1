@@ -19,6 +19,8 @@ public interface GroupMessageService {
 
     GroupMessage getMessage(ObjectId id);
 
+    GroupMessage getMessage(User sender, Group group, String text);
+
     List<GroupMessage> getMessages(User sender);
 
     List<GroupMessage> getMessages(Group group);

@@ -18,6 +18,8 @@ public interface UserMessageService {
 
     UserMessage getMessage(ObjectId id);
 
+    UserMessage getMessage(User sender, User recipient, String text);
+
     List<UserMessage> getAllMessagesUser(User user);
 
     List<UserMessage> getMessagesBySender(User sender);

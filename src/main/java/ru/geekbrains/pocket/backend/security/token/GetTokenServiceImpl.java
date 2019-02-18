@@ -16,7 +16,7 @@ public class GetTokenServiceImpl { //implements GetTokenService {
 //    private UserDetailsService userDetailsService;
 //
 //    @Override
-//    public TokenObject getToken(String username, String password) throws Exception {
+//    public TokenObject getUserToken(String username, String password) throws Exception {
 //        if (username == null || password == null)
 //            return null;
 //        User user = (User) userDetailsService.loadUserByUsername(username);

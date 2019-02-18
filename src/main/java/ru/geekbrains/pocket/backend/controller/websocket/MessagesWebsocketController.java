@@ -110,7 +110,7 @@ public class MessagesWebsocketController implements ApplicationListener<BrokerAv
             UserMessage userMessage = userMessageService.getMessage(new ObjectId(message.getId()));
             User recipient = userMessage.getRecipient();
             log.warn("processMessageRead: " + message.getSender());
-            System.out.println("processMessageRead: " + HtmlUtils.htmlEscape(message.getSender()));
+            log.debug("processMessageRead: " + HtmlUtils.htmlEscape(message.getSender()));
             return new ServerMessageRead(message.getId(), recipient.getId().toString());
         }
         return null;
@@ -120,7 +120,6 @@ public class MessagesWebsocketController implements ApplicationListener<BrokerAv
     @SendToUser("/queue/errors")
     public String handleException(Throwable exception) {
         log.error("handleException: " + exception.getMessage());
-        System.out.println("handleException : " + exception.getMessage());
         return exception.getMessage();
     }
 

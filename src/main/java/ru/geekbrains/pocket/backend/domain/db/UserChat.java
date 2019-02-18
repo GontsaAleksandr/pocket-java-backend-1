@@ -16,7 +16,8 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @Document(collection = "users.chats")
 public class UserChat {
-
+    //TODO index unique = user + group
+    //TODO index unique = user + direct
     @Id
     private ObjectId id;
 

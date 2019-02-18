@@ -11,6 +11,8 @@ import java.util.List;
 @Repository
 public interface UserMessageRepository extends MongoRepository<UserMessage, ObjectId> {
 
+    UserMessage findFirstBySenderAndRecipientAndText(User sender, User recipient, String text);
+
     List<UserMessage> findBySender(User sender);
 
     List<UserMessage> findByRecipient(User recipient);

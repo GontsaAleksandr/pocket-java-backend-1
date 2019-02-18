@@ -44,7 +44,7 @@ public class UserMessage {
     private boolean read = false;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private Date sent_at;
+    private Date sent_at = new Date();
 
     public UserMessage(@NotNull User sender, @NotNull User recipient, @NotEmpty String text) {
         this.sender = sender;

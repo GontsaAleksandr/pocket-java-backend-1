@@ -51,8 +51,7 @@ public class TestWebsocketController implements ApplicationListener<BrokerAvaila
     @MessageMapping("/test")
     @SendTo("/topic/test")
     public TestMessage testMessage(@Payload TestMessage testMessage) {
-        log.debug("testMessage: " + testMessage.getUsername());// principal.getName());
-        System.out.println("testMessage: " + testMessage.getUsername() + ", " + testMessage);
+        log.debug("testMessage: " + testMessage.getUsername() + ", " + testMessage);
         return new TestMessage(testMessage.getUsername(),
                 testMessage.getEmail(), testMessage.getText());
     }
@@ -60,8 +59,7 @@ public class TestWebsocketController implements ApplicationListener<BrokerAvaila
     @SubscribeMapping("/testsubscribe")
     //@SendTo("/topic/testsubscribe")
     public TestMessage testSubscribe(Principal principal, @Payload TestMessage testMessage) {
-        log.debug("testSubscribe: " + testMessage.getUsername());
-        System.out.println("testSubscribe: " + testMessage.getUsername() + ", " + testMessage + ", " + principal);
+        log.debug("testSubscribe: " + testMessage.getUsername() + ", " + testMessage + ", " + principal);
 //        return new TestMessage(testMessage.getUsername(),
 //                testMessage.getEmail(), "testSubscribe: " + testMessage.getText());
         return new TestMessage("Bob", "b@b.com", "message from bob");
@@ -75,7 +73,6 @@ public class TestWebsocketController implements ApplicationListener<BrokerAvaila
         }
         if (this.brokerAvailable.get()) {
             log.debug("sendTest: " + user);
-            System.out.println("sendTest: " + user);
 
             this.simpMessagingTemplate.convertAndSend("/topic/test." + "sendTest", user);
         }
@@ -89,7 +86,6 @@ public class TestWebsocketController implements ApplicationListener<BrokerAvaila
         TestMessage user = new TestMessage("TestMessage", "email4", "sendToUserTest");
         if (this.brokerAvailable.get()) {
             log.debug("sendToUserTest: " + user);
-            System.out.println("sendToUserTest: " + user);
 
             String payload = "sendToUserTest: " + user.getUsername();
             this.simpMessagingTemplate.convertAndSendToUser(user.getUsername(), "/queue/sendToUserTest", payload, map);
@@ -100,7 +96,6 @@ public class TestWebsocketController implements ApplicationListener<BrokerAvaila
         TestMessage user = new TestMessage("TestMessage", "email5", "sendToUserTestError");
         if (this.brokerAvailable.get()) {
             log.debug("sendToUserTestError: " + user);
-            System.out.println("sendToUserTestError: " + user);
 
             String payload = "sendToUserTestError: " + user;
             this.simpMessagingTemplate.convertAndSendToUser(user.getUsername(), "/queue/errors", payload);

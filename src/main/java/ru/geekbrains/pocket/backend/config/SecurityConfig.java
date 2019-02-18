@@ -103,7 +103,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 //                .sessionManagement() //https://www.baeldung.com/spring-security-session
 //                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
-//        https://www.baeldung.com/spring-security-websockets
+////        https://www.baeldung.com/spring-security-websockets
                 .headers().frameOptions().sameOrigin()
         ;
     }
@@ -137,13 +137,5 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public ClientKeyGenerator clientKeyGenerator(){
         return new DefaultClientKeyGenerator();
     }
-
-//    @Bean(name = "restTokenAuthenticationFilter")
-//    public TokenAuthenticationFilter restTokenAuthenticationFilter() {
-//        TokenAuthenticationFilter restTokenAuthenticationFilter = new TokenAuthenticationFilter();
-//        tokenAuthenticationManager.setUserDetailsService(userService);
-//        restTokenAuthenticationFilter.setAuthenticationManager(tokenAuthenticationManager);
-//        return restTokenAuthenticationFilter;
-//    }
 
 }

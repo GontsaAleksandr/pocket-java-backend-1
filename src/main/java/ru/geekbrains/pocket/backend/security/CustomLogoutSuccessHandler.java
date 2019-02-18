@@ -1,5 +1,6 @@
 package ru.geekbrains.pocket.backend.security;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Log4j2
 @Component
 public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler implements LogoutSuccessHandler {
 
@@ -21,10 +23,10 @@ public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler im
     @Override
     public void onLogoutSuccess(final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication) throws IOException, ServletException {
         final String refererUrl = request.getHeader("Referer");
-        System.out.println("CustomLogoutSuccessHandler.onLogoutSuccess refererUrl : " + refererUrl);
+        log.debug("CustomLogoutSuccessHandler.onLogoutSuccess refererUrl : " + refererUrl);
 
         if (authentication != null) {
-            System.out.println("User logout: " + authentication.getName());
+            log.debug("User logout: " + authentication.getName());
         }
 
         request.getSession(false);

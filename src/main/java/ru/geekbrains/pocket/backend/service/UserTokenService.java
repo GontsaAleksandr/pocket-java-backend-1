@@ -1,38 +1,42 @@
 package ru.geekbrains.pocket.backend.service;
 
 import org.bson.types.ObjectId;
-import ru.geekbrains.pocket.backend.domain.db.PasswordResetToken;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserToken;
 import ru.geekbrains.pocket.backend.enumeration.TokenStatus;
-import ru.geekbrains.pocket.backend.exception.TokenNotFoundException;
+
+import java.util.List;
 
 public interface UserTokenService {
 
-    PasswordResetToken createPasswordResetTokenForUser(User user, String token);
+//    PasswordResetToken createPasswordResetTokenForUser(User user, String token);
 
-    UserToken createTokenForUser(User user);
+    UserToken createOrUpdateToken(User user, String userIp);
+
+    List<UserToken> createOrUpdateToken(User user);
+
+    TokenStatus getTokenStatus(String token);
 
     User getUserByToken(String token);
 
-    UserToken getNewToken(User user);
+    UserToken getUserToken(String token);
 
-    UserToken getToken(User user);
+    UserToken getUserToken(User user, String userIp);
 
-    UserToken getToken(String token);
+    List<UserToken> getUserToken(User user);
 
-    UserToken getValidToken(User user);
+    UserToken getValidToken(User user, String userIp);
 
-    UserToken updateToken(UserToken userToken);
+    List<UserToken> getValidToken(User user);
 
-    UserToken updateToken(String token) throws TokenNotFoundException;
+    UserToken updateUserToken(UserToken userToken);
 
-    void deleteUserToken(UserToken tokenOnDelete);
+    UserToken updateUserToken(String token);
+
+    void deleteUserToken(UserToken userToken);
 
     void deleteAllUserToken();
 
-    String validatePasswordResetToken(ObjectId id, String token);
-
-    TokenStatus validateToken(String token);
+//    String validatePasswordResetToken(ObjectId id, String token);
 
 }

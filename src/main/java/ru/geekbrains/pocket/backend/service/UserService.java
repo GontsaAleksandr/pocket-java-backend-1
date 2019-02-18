@@ -1,17 +1,14 @@
 package ru.geekbrains.pocket.backend.service;
 
-import com.mongodb.MongoServerException;
 import com.mongodb.MongoWriteException;
 import org.bson.types.ObjectId;
 import org.springframework.dao.DuplicateKeyException;
 import ru.geekbrains.pocket.backend.domain.db.Role;
 import ru.geekbrains.pocket.backend.domain.db.User;
-import ru.geekbrains.pocket.backend.domain.db.UserProfile;
 import ru.geekbrains.pocket.backend.exception.InvalidOldPasswordException;
 import ru.geekbrains.pocket.backend.exception.UserAlreadyExistException;
 import ru.geekbrains.pocket.backend.resource.UserResource;
 
-import java.util.Date;
 import java.util.List;
 
 public interface UserService {
@@ -27,6 +24,8 @@ public interface UserService {
 
     void delete(String email);
 
+    void deleteAll();
+
     List<User> getAllUsers();
 
     List<UserResource> getAllUserResources();
@@ -41,10 +40,10 @@ public interface UserService {
 
     User insert(User user);
 
-    User update(User user);
+    User update(User user) throws DuplicateKeyException, MongoWriteException;
 
     User updateNameAndPassword(User user, String name, String oldPassword, String newPassword)
-            throws InvalidOldPasswordException;
+            throws InvalidOldPasswordException, DuplicateKeyException, MongoWriteException;
 
     User validateUser(ObjectId id);
 

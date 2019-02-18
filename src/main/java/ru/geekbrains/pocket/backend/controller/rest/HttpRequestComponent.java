@@ -21,8 +21,9 @@ class HttpRequestComponent {
         String token = null;
         if (header != null && header.startsWith(TOKEN_PREFIX)) {
             token = header.replace(TOKEN_PREFIX, "");
+            return userTokenService.getUserByToken(token);
         }
-        return userTokenService.getUserByToken(token);
+        return null;
     }
 
     User getUserFromToken(String token) throws UserNotFoundException {

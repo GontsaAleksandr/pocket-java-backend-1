@@ -144,7 +144,7 @@
 //		this.stopWatch.start();
 //
 //		for (String sessionId : sessionIds) {
-//			StompHeaderAccessor headerAccessor = StompHeaderAccessor.create(StompCommand.CONNECT);
+//			StompHeaderAccessor headerAccessor = StompHeaderAccessor.createRoleIfNotFound(StompCommand.CONNECT);
 //			headerAccessor.setHeartbeat(0, 0);
 //			headerAccessor.setSessionId(sessionId);
 //			Message<byte[]> message = MessageBuilder.createMessage(new byte[0], headerAccessor.getMessageHeaders());
@@ -174,7 +174,7 @@
 //		this.stopWatch.start();
 //
 //		for (int i=0; i < sessionIds.size(); i++) {
-//			StompHeaderAccessor headerAccessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+//			StompHeaderAccessor headerAccessor = StompHeaderAccessor.createRoleIfNotFound(StompCommand.SUBSCRIBE);
 //			headerAccessor.setSessionId(sessionIds.get(i));
 //			headerAccessor.setSubscriptionId(subscriptionIds.get(i));
 //			headerAccessor.setDestination(DEFAULT_DESTINATION);
@@ -233,7 +233,7 @@
 //		this.stopWatch.start("Disconnect");
 //
 //		for (String sessionId : sessionIds) {
-//			StompHeaderAccessor headerAccessor = StompHeaderAccessor.create(StompCommand.DISCONNECT);
+//			StompHeaderAccessor headerAccessor = StompHeaderAccessor.createRoleIfNotFound(StompCommand.DISCONNECT);
 //			headerAccessor.setSessionId(sessionId);
 //			Message<byte[]> message = MessageBuilder.createMessage(new byte[0], headerAccessor.getMessageHeaders());
 //			this.clientInboundChannel.send(message);

@@ -1,5 +1,6 @@
 package ru.geekbrains.pocket.backend.controller.advice;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
@@ -19,6 +20,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import ru.geekbrains.pocket.backend.exception.UserNotFoundException;
 import ru.geekbrains.pocket.backend.response.GenericResponse;
 
+@Log4j2
 @ControllerAdvice
 //@RestControllerAdvice
 public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
@@ -28,7 +30,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
     @ExceptionHandler({UserNotFoundException.class})
     public ResponseEntity<Object> handleUserNotFound(RuntimeException ex, WebRequest request) {
-        logger.error("404 Status Code", ex);
+        log.error("404 Status Code", ex);
         GenericResponse bodyOfResponse = new GenericResponse(
                 messages.getMessage("message.userNotFound", null, request.getLocale()), "UserNotFound");
 
@@ -38,7 +40,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
     @ExceptionHandler({MailAuthenticationException.class})
     public ResponseEntity<Object> handleMail(RuntimeException ex, WebRequest request) {
-        logger.error("500 Status Code", ex);
+        log.error("500 Status Code", ex);
         GenericResponse bodyOfResponse = new GenericResponse(
                 messages.getMessage(
                         "message.email.config.error", null, request.getLocale()), "MailError");
@@ -51,6 +53,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
     @ExceptionHandler({DataIntegrityViolationException.class})
     public ResponseEntity<Object> handleBadRequest(final DataIntegrityViolationException ex, final WebRequest request) {
+        log.error("400 Status Code", ex);
         final String bodyOfResponse = "This should be application specific";
         return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
     }
@@ -58,7 +61,8 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     // 403
     @ExceptionHandler({AccessDeniedException.class})
     public ResponseEntity<Object> handleAccessDeniedException(final Exception ex, final WebRequest request) {
-        System.out.println("request" + request.getUserPrincipal());
+        log.error("403 Status Code", ex);
+        log.debug("request" + request.getUserPrincipal());
         return new ResponseEntity<Object>("Access denied message here", new HttpHeaders(), HttpStatus.FORBIDDEN);
     }
 
@@ -66,24 +70,25 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
     @ExceptionHandler({InvalidDataAccessApiUsageException.class, DataAccessException.class})
     protected ResponseEntity<Object> handleConflict(final RuntimeException ex, final WebRequest request) {
+        log.error("409 Status Code", ex);
         final String bodyOfResponse = "This should be application specific";
         return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.CONFLICT, request);
     }
 
-    // 412
+    // 412,
 
     // 500
 
     @ExceptionHandler({NullPointerException.class, IllegalArgumentException.class, IllegalStateException.class})
     /*500*/ public ResponseEntity<Object> handleInternal(final RuntimeException ex, final WebRequest request) {
-        logger.error("500 Status Code", ex);
+        log.error("500 Status Code", ex);
         final String bodyOfResponse = "This should be application specific";
         return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
     @ExceptionHandler({Exception.class})
     public ResponseEntity<Object> handleInternalOther(final RuntimeException ex, final WebRequest request) {
-        logger.error("500 Status Code", ex);
+        log.error("500 Status Code", ex);
         GenericResponse bodyOfResponse = new GenericResponse(
                 messages.getMessage(
                         "message.error", null, request.getLocale()), "InternalError");

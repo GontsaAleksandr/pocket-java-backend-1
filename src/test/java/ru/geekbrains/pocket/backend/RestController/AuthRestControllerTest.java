@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,6 +24,7 @@ import org.springframework.web.context.WebApplicationContext;
 import ru.geekbrains.pocket.backend.controller.rest.AuthRestController;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.service.UserService;
+import ru.geekbrains.pocket.backend.util.ConverterJSON;
 import ru.geekbrains.pocket.backend.util.validation.ValidEmail;
 
 import javax.validation.constraints.NotNull;
@@ -36,6 +38,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
+@Log4j2
 @RunWith(SpringJUnit4ClassRunner.class)
 //@RunWith(MockitoJUnitRunner.class)
 @WebAppConfiguration
@@ -62,6 +65,11 @@ public class AuthRestControllerTest {
             MediaType.APPLICATION_JSON.getSubtype(),
             Charset.forName("utf8"));
 
+    private final String email = "testing@mail.ru";
+    private final String password = "Abc12345";
+    private final String username = "Testing";
+    private final String fullname = "Testing Backend";
+
     @Before
     public void setup() throws Exception {
         mockMvc = webAppContextSetup(webApplicationContext)
@@ -79,8 +87,11 @@ public class AuthRestControllerTest {
 
     @Test
     public void login() throws Exception {
+        assertNotNull(getUser());
+
         AuthRestController.LoginRequest loginRequest =
-                new AuthRestController.LoginRequest("a@mail.ru","Abc12345");
+                new AuthRestController.LoginRequest(email,password);
+        assertNotNull(loginRequest);
         MockHttpServletRequestBuilder request = MockMvcRequestBuilders
                 .post("/auth/login")
                 .content(gson.toJson(loginRequest))
@@ -94,12 +105,17 @@ public class AuthRestControllerTest {
                 .andExpect(content().contentType(contentType))
                 //.andExpect(content().mimeType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token", notNullValue()))
-                .andExpect(jsonPath("$.user.email",  equalTo("a@mail.ru")))
-                .andExpect(jsonPath("$.user.profile.username",  equalTo("Alex")))
+                .andExpect(jsonPath("$.user.email",  equalTo(email)))
+                .andExpect(jsonPath("$.user.profile.username",  equalTo(username)))
         ;
 
         MvcResult mvcResult  = result.andReturn();
-
+        String r = mvcResult.getResponse().getContentAsString();
+        AuthRestController.RegistrationResponse registrationResponse =
+                gson.fromJson(r, AuthRestController.RegistrationResponse.class);
+        String token = registrationResponse.getToken();
+        log.debug("token : " + token);
+        System.out.println("token : " + token);
     }
 
     @Test
@@ -113,7 +129,7 @@ public class AuthRestControllerTest {
     @Test
     public void loginBadPassword() throws Exception {
         AuthRestController.LoginRequest loginRequest =
-                new AuthRestController.LoginRequest("a@mail.ru","123");
+                new AuthRestController.LoginRequest(email,"BadPass");
         mockMvc.perform(post("/auth/login")
                 .content(gson.toJson(loginRequest))
                 .contentType(contentType))
@@ -124,7 +140,7 @@ public class AuthRestControllerTest {
     @Test
     public void loginNotFound() throws Exception {
         AuthRestController.LoginRequest loginRequest =
-                new AuthRestController.LoginRequest("notfound@mail.ru","Abc12345");
+                new AuthRestController.LoginRequest("notfound@mail.ru", password);
         mockMvc.perform(post("/auth/login")
                 .content(gson.toJson(loginRequest))
                 .contentType(contentType))
@@ -135,71 +151,90 @@ public class AuthRestControllerTest {
     //=============== registration ===============
 
     @Test
-    public void registration() throws Exception {
-        userService.delete("reg_test@mail.ru");
+    public void registrationAndNotDelete() throws Exception {
+        userService.delete(email);
 
-        AuthRestController.RegistrationRequest loginRequest =
-                new AuthRestController.RegistrationRequest("reg_test@mail.ru","Abc12345","RegTest");
+        AuthRestController.RegistrationRequest registrationRequest =
+                new AuthRestController.RegistrationRequest(email, password, username);
+        assertNotNull(registrationRequest);
         mockMvc.perform(post("/auth/registration")
-                .content(gson.toJson(loginRequest))
+                .content(gson.toJson(registrationRequest))
                 .contentType(contentType))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(contentType))
                 .andExpect(jsonPath("$.token", notNullValue()))
-                .andExpect(jsonPath("$.user.email",  equalTo("reg_test@mail.ru")))
-                .andExpect(jsonPath("$.user.profile.username",  equalTo("RegTest")))
+                .andExpect(jsonPath("$.user.email",  equalTo(email)))
+                .andExpect(jsonPath("$.user.profile.username",  equalTo(username)))
         ;
 
-        User user = userService.getUserByEmail("reg_test@mail.ru");
+        User user = userService.getUserByEmail(email);
         assertNotNull(user);
+    }
 
-        userService.delete("reg_test@mail.ru");
+    @Test
+    public void registration() throws Exception {
+        userService.delete(email);
+
+        AuthRestController.RegistrationRequest registrationRequest =
+                new AuthRestController.RegistrationRequest(email,password,username);
+        assertNotNull(registrationRequest);
+        mockMvc.perform(post("/auth/registration")
+                .content(gson.toJson(registrationRequest))
+                .contentType(contentType))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$.token", notNullValue()))
+                .andExpect(jsonPath("$.user.email",  equalTo(email)))
+                .andExpect(jsonPath("$.user.profile.username",  equalTo(username)))
+        ;
+
+        User user = userService.getUserByEmail(email);
+        assertNotNull(user);
     }
 
     @Test
     public void registrationBadPassword() throws Exception {
-        AuthRestController.RegistrationRequest loginRequest =
-                new AuthRestController.RegistrationRequest("badpassword@mail.ru","Abc12","badpassword");
+        AuthRestController.RegistrationRequest registrationRequest =
+                new AuthRestController.RegistrationRequest(email,"BadPass",username);
+        assertNotNull(registrationRequest);
         mockMvc.perform(post("/auth/registration")
-                .content(gson.toJson(loginRequest))
+                .content(gson.toJson(registrationRequest))
                 .contentType(contentType))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void registrationConflictEmail() throws Exception {
-        User user = userService.getUserByEmail("reg_test@mail.ru");
-        if (user == null)
-            user = userService.createUserAccount("reg_test@mail.ru","Abc12345","RegTest");
-        assertNotNull(user);
+        assertNotNull(getUser());
 
-        AuthRestController.RegistrationRequest loginRequest =
-                new AuthRestController.RegistrationRequest("reg_test@mail.ru","Abc12345","RegTest");
+        AuthRestController.RegistrationRequest registrationRequest =
+                new AuthRestController.RegistrationRequest(email, password, username);
+        assertNotNull(registrationRequest);
         mockMvc.perform(post("/auth/registration")
-                .content(gson.toJson(loginRequest))
+                .content(gson.toJson(registrationRequest))
                 .contentType(contentType))
                 .andExpect(status().isConflict());
-
-        userService.delete("reg_test@mail.ru");
     }
 
     @Test
     public void registrationConflictUserName() throws Exception {
-        userService.delete("reg_test2@mail.ru");
-        User user = userService.getUserByEmail("reg_test@mail.ru");
-        if (user == null)
-            user = userService.createUserAccount("reg_test@mail.ru","Abc12345","RegTest");
-        assertNotNull(user);
+        assertNotNull(getUser());
+        userService.delete("any" + email);
 
-        AuthRestController.RegistrationRequest loginRequest =
-                new AuthRestController.RegistrationRequest("reg_test2@mail.ru","Abc12345","RegTest");
+        AuthRestController.RegistrationRequest registrationRequest =
+                new AuthRestController.RegistrationRequest("any" + email, password ,username);
+        assertNotNull(registrationRequest);
         mockMvc.perform(post("/auth/registration")
-                .content(gson.toJson(loginRequest))
+                .content(gson.toJson(registrationRequest))
                 .contentType(contentType))
                 .andExpect(status().isConflict());
 
-        userService.delete("reg_test@mail.ru");
-        userService.delete("reg_test2@mail.ru");
+        userService.delete(email);
+        userService.delete("any" + email);
     }
 
+    private User getUser() {
+        userService.delete(email);
+        return userService.createUserAccount(email, password, username);
+    }
 }

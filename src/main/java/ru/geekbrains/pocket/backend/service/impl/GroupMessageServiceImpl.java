@@ -49,6 +49,11 @@ public class GroupMessageServiceImpl implements GroupMessageService {
     }
 
     @Override
+    public GroupMessage getMessage(User sender, Group group, String text) {
+        return repository.findFirstBySenderAndGroupAndText(sender, group, text);
+    }
+
+    @Override
     public List<GroupMessage> getMessages(User sender) {
         return repository.findBySender(sender);
     }
