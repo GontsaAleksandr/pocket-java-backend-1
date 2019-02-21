@@ -1,5 +1,6 @@
 package ru.geekbrains.pocket.backend.service.impl;
 
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.geekbrains.pocket.backend.domain.db.Group;
@@ -9,6 +10,7 @@ import ru.geekbrains.pocket.backend.repository.UserChatRepository;
 import ru.geekbrains.pocket.backend.service.UserChatService;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserChatServiceImpl implements UserChatService {
@@ -21,8 +23,18 @@ public class UserChatServiceImpl implements UserChatService {
     }
 
     @Override
+    public UserChat createUserChat(User user, User direct) {
+        return repository.insert(new UserChat(user, direct));
+    }
+
+    @Override
     public UserChat createUserChat(User user, User direct, User sender) {
         return repository.insert(new UserChat(user, direct, sender));
+    }
+
+    @Override
+    public UserChat getUserChat(ObjectId id) {
+        return repository.findById(id).orElse(null);
     }
 
     @Override
@@ -48,5 +60,10 @@ public class UserChatServiceImpl implements UserChatService {
     @Override
     public void deleteAllUserChats() {
         repository.deleteAll();
+    }
+
+    @Override
+    public void deleteUserChat(ObjectId id) {
+        repository.deleteById(id);
     }
 }

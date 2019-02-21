@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.geekbrains.pocket.backend.domain.db.UserChat;
+import ru.geekbrains.pocket.backend.exception.UserNotFoundException;
 
 import javax.validation.constraints.NotNull;
 
@@ -25,12 +26,16 @@ public class UserChatPub {
 
     private Integer unread; //Сколько непрочитанных сообщений в истории
 
-    public UserChatPub(@NotNull UserChat userChat) {
+    public UserChatPub(@NotNull UserChat userChat) throws UserNotFoundException {
+        if (userChat.getDirect() == null)
+            throw new UserNotFoundException("Direct in user chat not found");
+
         this.id = userChat.getId().toString();
         if (userChat.getGroup() != null)
             this.group = new GroupPub(userChat.getGroup());
         this.direct = new UserProfilePub(userChat.getDirect());
-        this.sender = new UserProfilePub(userChat.getSender());
+        if (userChat.getSender() != null )
+            this.sender = new UserProfilePub(userChat.getSender());
         this.preview = userChat.getPreview();
         this.unread = userChat.getUnread();
     }

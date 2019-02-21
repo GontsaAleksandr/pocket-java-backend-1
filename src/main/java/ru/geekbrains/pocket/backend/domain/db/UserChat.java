@@ -36,12 +36,16 @@ public class UserChat {
     private User direct;
 
     @DBRef
-    @NotNull
     private User sender;
 
     private String preview;
 
     private Integer unread;
+
+    public UserChat(@Valid @NotNull User user, @Nullable User direct) {
+        this.user = user;
+        this.direct = direct;
+    }
 
     public UserChat(@Valid User user, @Nullable User direct, @NotNull User sender) {
         this.user = user;

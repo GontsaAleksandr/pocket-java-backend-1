@@ -40,10 +40,10 @@ public class UserMessageRestController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 }
 
-    @GetMapping("/{idUser}/messages/{id}") //Получить конкретное сообщение
+    @GetMapping("/{idUser}/messages/{idMessage}") //Получить конкретное сообщение
     public ResponseEntity<?> findMessage(@PathVariable String idUser, @PathVariable String idMessage) {
         UserMessage message = userMessageService.getMessage(new ObjectId(idMessage));
-        if (message != null) {
+        if (message != null && message.getSender() != null && idUser != null && !idUser.equals("")) {
             if (idUser.equals(message.getSender().getId().toString())
                     || idUser.equals(message.getRecipient().getId().toString()))
                 return new ResponseEntity<>(new MessagePub(message), HttpStatus.OK);

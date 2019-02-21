@@ -193,8 +193,6 @@ public class AccountRestControllerTest {
 
     private User getUser() {
         userService.delete(email);
-        userService.delete(email);
-        userService.delete(email);
         User user = userService.createUserAccount(email, password, username);
         try {
             token = userTokenService.getValidToken(user, "0.0.0.0").getToken();

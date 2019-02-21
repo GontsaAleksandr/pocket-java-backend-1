@@ -1,6 +1,7 @@
 package ru.geekbrains.pocket.backend.controller.rest;
 
 import lombok.extern.log4j.Log4j2;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,18 @@ public class ChatRestController {
             return new ResponseEntity<>(new UserChatCollection(offset, userChats), HttpStatus.OK);
         }
         else
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @DeleteMapping("/chats/{id}") //Удаление чата
+    public ResponseEntity<?> deleteChat(@PathVariable String id,
+                                        HttpServletRequest request) {
+        ObjectId objectId = new ObjectId(id);
+        UserChat userChat = userChatService.getUserChat(objectId);
+        if (userChat != null) {
+            userChatService.deleteUserChat(objectId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
