@@ -24,5 +24,6 @@ public interface UserChatRepository extends MongoRepository<UserChat, ObjectId> 
     @Query("{'user':?0}")
     List<UserChat> findCustomByUser(User user);
 
+    void deleteByUser(User user);
 
 }

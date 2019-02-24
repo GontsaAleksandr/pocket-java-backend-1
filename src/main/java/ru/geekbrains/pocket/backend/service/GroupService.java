@@ -10,7 +10,7 @@ public interface GroupService {
 
     Group createGroup(Group group);
 
-    Group createGroupAndMember(Group group, User member);
+    Group createGroup(User creator);
 
     void deleteGroup(Group group);
 

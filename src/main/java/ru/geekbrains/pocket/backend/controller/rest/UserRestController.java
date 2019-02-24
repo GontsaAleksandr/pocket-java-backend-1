@@ -20,21 +20,18 @@ public class UserRestController {
     @Autowired
     private UserService userService;
 
-    //@ResponseStatus(HttpStatus.OK)
-    @GetMapping("/users/{id}") //Получить информацию о пользователе
-    public ResponseEntity<?> getUserProfileById(@PathVariable String id) {
-        //TODO validate
-        User user = userService.getUserById(new ObjectId(id));
+    @GetMapping("/users") //Поиск пользователя
+    public ResponseEntity<?> findUser(@RequestParam("email") @Size(min = 6, max = 32) String email) {
+        User user = userService.getUserByEmail(email);
         if (user != null)
             return new ResponseEntity<>(new UserProfilePub(user), HttpStatus.OK);
         else
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping("/users") //Поиск пользователя
-    public ResponseEntity<?> findUser(@RequestParam("email") @Size(min = 6, max = 32) String email) {
-        //TODO validate
-        User user = userService.getUserByEmail(email);
+    @GetMapping("/users/{id}") //Получить информацию о пользователе
+    public ResponseEntity<?> getUserProfileById(@PathVariable String id) {
+        User user = userService.getUserById(new ObjectId(id));
         if (user != null)
             return new ResponseEntity<>(new UserProfilePub(user), HttpStatus.OK);
         else

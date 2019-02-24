@@ -84,6 +84,9 @@ public class GroupInviteRestController {
             if (groupMember != null && groupMember.getRole().equals(RoleGroupMember.administrator)) {
                 if (group.getInvitation_code() != null) {
                     group.setInvitation_code(null);
+                    group = groupService.updateGroup(group);
+                    if (group == null)
+                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                 }
                 return new ResponseEntity<>(HttpStatus.OK);
             } else
@@ -101,10 +104,10 @@ public class GroupInviteRestController {
 
         private boolean active = true;
 
-        private String invition_code;
+        private String invitation_code;
 
-        public InviteResponseTrue(String invition_code) {
-            this.invition_code = invition_code;
+        public InviteResponseTrue(String invitation_code) {
+            this.invitation_code = invitation_code;
         }
     }
 

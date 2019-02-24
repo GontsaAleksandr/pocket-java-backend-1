@@ -2,8 +2,6 @@ package ru.geekbrains.pocket.backend.RestController;
 
 import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j2;
-import org.bson.types.ObjectId;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,20 +15,17 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.context.WebApplicationContext;
 import ru.geekbrains.pocket.backend.controller.rest.AccountRestController;
-import ru.geekbrains.pocket.backend.controller.rest.AuthRestController;
 import ru.geekbrains.pocket.backend.domain.db.User;
-import ru.geekbrains.pocket.backend.domain.db.UserChat;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatCollection;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatPub;
-import ru.geekbrains.pocket.backend.service.UserChatService;
+import ru.geekbrains.pocket.backend.domain.pub.UserProfilePub;
 import ru.geekbrains.pocket.backend.service.UserService;
 import ru.geekbrains.pocket.backend.service.UserTokenService;
 
 import java.nio.charset.Charset;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -38,20 +33,18 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @SpringBootTest
-public class ChatRestControllerTest {
+public class UserRestControllerTest {
 
     private final String email = "testing@mail.ru";
     private final String password = "Abc12345";
     private final String username = "Testing";
+    private final String fullname = "Testing Backend";
     @Autowired
     private WebApplicationContext webApplicationContext;
     @Autowired
     private UserService userService;
     @Autowired
     private UserTokenService userTokenService;
-    @Autowired
-    private UserChatService userChatService;
-
     private MockMvc mockMvc;
     private Gson gson;
     private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
@@ -60,57 +53,58 @@ public class ChatRestControllerTest {
     private String token;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         mockMvc = webAppContextSetup(webApplicationContext).dispatchOptions(true).build();
 
         gson = new Gson();
     }
 
-    //=============== chats get ===============
+    //=============== find user get ===============
 
     @Test
-    public void chats() throws Exception {
-        String offset = "0";
-        assertNotNull(getUser()); //юзер от которого выполняется запрос, нужен для получения токена
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                userService.getUserByEmail(email));
-        assertNotNull(userChat);
+    public void findUser() throws Exception {
+        User user = getUser();
+        assertNotNull(user);
+        String idUser = user.getId().toString();
 
-        ResultActions result = mockMvc.perform(get("/account/chats")
+        ResultActions result = mockMvc.perform(get("/users")
                 .header("Authorization", "Bearer " + token)
-                .param("offset",offset))
+                .param("email", email))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(contentType))
-                .andExpect(jsonPath("$", notNullValue()))
-                .andExpect(jsonPath("$.offset", isA(Number.class)))
-                .andExpect(jsonPath("$.offset", equalTo(new Integer(offset))))
-                .andExpect(jsonPath("$..[0]",  notNullValue()))
+                .andExpect(jsonPath("$.username", equalTo(username)))
         ;
 
         MvcResult mvcResult  = result.andReturn();
         String r = mvcResult.getResponse().getContentAsString();
-        UserChatCollection userChatCollection = gson.fromJson(r, UserChatCollection.class);
-        assertNotNull(userChatCollection);
+        UserProfilePub userProfilePub = gson.fromJson(r, UserProfilePub.class);
+        assertNotNull(userProfilePub);
+        assertEquals(idUser, userProfilePub.getId());
     }
 
-    //=============== chat delete ===============
+    //=============== get user profile ===============
 
     @Test
-    public void deleteChat() throws Exception {
-        assertNotNull(getUser());
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                                                            userService.getUserByEmail(email));
-        assertNotNull(userChat);
-        String id = userChat.getId().toString();
+    public void getUserProfile() throws Exception {
+        User user = getUser();
+        assertNotNull(user);
+        String idUser = user.getId().toString();
 
-        mockMvc.perform(delete("/account/chats/" + id)
-                .header("Authorization", "Bearer " + token))
+        ResultActions result = mockMvc.perform(get("/users/" + idUser)
+                .header("Authorization", "Bearer " + token)
+                .param("email", email))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$.username", equalTo(username)))
         ;
 
-        userChat = userChatService.getUserChat(new ObjectId(id));
-        assertNull(userChat);
+        MvcResult mvcResult  = result.andReturn();
+        String r = mvcResult.getResponse().getContentAsString();
+        UserProfilePub userProfilePub = gson.fromJson(r, UserProfilePub.class);
+        assertNotNull(userProfilePub);
+        assertEquals(idUser, userProfilePub.getId());
     }
+
 
     private User getUser() {
         userService.delete(email);

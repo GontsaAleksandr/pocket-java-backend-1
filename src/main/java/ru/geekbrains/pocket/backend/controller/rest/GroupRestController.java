@@ -12,6 +12,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.geekbrains.pocket.backend.domain.db.Group;
 import ru.geekbrains.pocket.backend.domain.db.GroupMember;
@@ -26,6 +27,9 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Log4j2
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -42,7 +46,12 @@ public class GroupRestController {
 
     @GetMapping("/groups/{id}") //Получить информацию о группе
     public ResponseEntity<?> getGroup(@PathVariable String id,
-                                      @Valid @RequestBody InvitationCodeRequest invitationCodeRequest) {
+                                      @Valid @RequestBody InvitationCodeRequest invitationCodeRequest,
+                                      final BindingResult result) {
+        if(result.hasErrors()) {
+            return getResponseEntity(result);
+        }
+
         Group group = groupService.getGroup(new ObjectId(id));
         if (group != null) {
             if (group.getInvitation_code() == null ||
@@ -55,7 +64,12 @@ public class GroupRestController {
 
     @PostMapping("/groups") //Создать группу
     public ResponseEntity<?> createGroup(@Valid @RequestBody NewGroupRequest newGroupRequest,
+                                         final BindingResult result,
                                          HttpServletRequest request) {
+        if(result.hasErrors()) {
+            return getResponseEntity(result);
+        }
+
         User user = httpRequestComponent.getUserFromToken(request);
         if (user != null) {
             Group group = new Group();
@@ -66,7 +80,7 @@ public class GroupRestController {
                 group.setDescription(newGroupRequest.getDescription());
             //group.setInvitation_code("");
             group.setPublic(newGroupRequest.isPublic);
-            group = groupService.createGroupAndMember(group, user);
+            group = groupService.createGroup(group);
             if (group != null) {
                 return new ResponseEntity<>(new GroupPub(group), HttpStatus.OK);
             }
@@ -77,7 +91,12 @@ public class GroupRestController {
     @PutMapping("/groups/{id}") //Изменить информацию о группе
     public ResponseEntity<?> editGroup(@PathVariable String id,
                                        @Valid @RequestBody EditGroupRequest groupRequest,
+                                       final BindingResult result,
                                        HttpServletRequest request) {
+        if(result.hasErrors()) {
+            return getResponseEntity(result);
+        }
+
         Group group = groupService.getGroup(new ObjectId(id));
         User user = httpRequestComponent.getUserFromToken(request);
         if (group != null && user != null) {
@@ -95,7 +114,7 @@ public class GroupRestController {
                     return new ResponseEntity<>(new GroupPub(group), HttpStatus.OK);
                 }
             } else {
-                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                return new ResponseEntity<>("You cannot do it", HttpStatus.FORBIDDEN);
             }
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -108,9 +127,9 @@ public class GroupRestController {
         try {
             invitationCodeRequest = new ObjectMapper().readValue(request.getReader(), InvitationCodeRequest.class);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.debug(e.getMessage());
         }
-        if (request.getMethod().equals("LINK")) {
+        if (request.getMethod().equals("LINK") || request.getMethod().equals("link")) {
             log.info("LINK METHOD"); //Вступить в группу
             User user = httpRequestComponent.getUserFromToken(request);
             Group group = groupService.getGroup(new ObjectId(id));
@@ -125,7 +144,7 @@ public class GroupRestController {
                 }
             }
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } else if (request.getMethod().equals("UNLINK")) {
+        } else if (request.getMethod().equals("UNLINK") || request.getMethod().equals("unlink")) {
             log.info("UNLINK METHOD"); //Покинуть группу
             User user = httpRequestComponent.getUserFromToken(request);
             Group group = groupService.getGroup(new ObjectId(id));
@@ -136,10 +155,8 @@ public class GroupRestController {
                 }
                 return new ResponseEntity<>(HttpStatus.OK);
             }
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } else {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
+        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
     }
 
 //    //TODO replace to LINK method
@@ -183,13 +200,24 @@ public class GroupRestController {
 //        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
 //    }
 
+    private ResponseEntity<?> getResponseEntity(BindingResult result) {
+        final Map<String, Object> response = new HashMap<>();
+        response.put("message", "Your request contains errors");
+        response.put("errors", result.getAllErrors()
+                .stream()
+                .map(x -> String.format("%s : %s", x.getCode(), x.getDefaultMessage()))
+                .collect(Collectors.toList()));
+        log.debug(response);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     //===== Request & Response =====
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class InvitationCodeRequest {
+    public static class InvitationCodeRequest {
 
         //@Nullable
         private String invitation_code;
@@ -200,7 +228,7 @@ public class GroupRestController {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class NewGroupRequest {
+    public static class NewGroupRequest {
 
         @NotNull
         @Size(min = 6, max = 32)
@@ -212,13 +240,21 @@ public class GroupRestController {
         @JsonProperty("public")
         private boolean isPublic = false;
 
+        public NewGroupRequest(@NotNull @Size(min = 6, max = 32) String name) {
+            this.name = name;
+        }
+
+        public NewGroupRequest(@NotNull @Size(min = 6, max = 32) String name, @Nullable String description) {
+            this.name = name;
+            this.description = description;
+        }
     }
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class EditGroupRequest {
+    public static class EditGroupRequest {
 
         @Nullable
         @Size(min = 6, max = 32)

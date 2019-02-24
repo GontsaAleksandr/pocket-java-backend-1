@@ -9,6 +9,7 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.geekbrains.pocket.backend.domain.db.Group;
 import ru.geekbrains.pocket.backend.domain.db.GroupMember;
@@ -24,7 +25,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Log4j2
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -54,7 +58,12 @@ public class GroupMemberRestController {
     //Особенность: не возвращает ошибки, если такой участник в группе уже есть, но и не добавляет его еще раз
     public ResponseEntity<?> addGroupMember(@PathVariable String id,
                                             @Valid @RequestBody AddGroupMemberRequest addGroupMemberRequest,
+                                            final BindingResult result,
                                             HttpServletRequest request) {
+        if(result.hasErrors()) {
+            return getResponseEntity(result);
+        }
+
         Group group = groupService.getGroup(new ObjectId(id));
         User user = httpRequestComponent.getUserFromToken(request);
         //определяем группу и текущего пользователя
@@ -122,13 +131,24 @@ public class GroupMemberRestController {
         return new ResponseEntity<>(HttpStatus.FORBIDDEN);
     }
 
+    private ResponseEntity<?> getResponseEntity(BindingResult result) {
+        final Map<String, Object> response = new HashMap<>();
+        response.put("message", "Your request contains errors");
+        response.put("errors", result.getAllErrors()
+                .stream()
+                .map(x -> String.format("%s : %s", x.getCode(), x.getDefaultMessage()))
+                .collect(Collectors.toList()));
+        log.debug(response);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     //===== Request & Response =====
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class AddGroupMemberRequest {
+    public static class AddGroupMemberRequest {
 
         @NotNull
         @NotEmpty

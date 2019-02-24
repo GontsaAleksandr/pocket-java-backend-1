@@ -48,10 +48,10 @@ public class BlacklistRestController {
 
     @PostMapping("/blacklist") //Добавить пользователя в ЧС
     //Особенность: не возвращает ошибки, если такой пользователь в ЧС уже есть, но и не добавляет его еще раз
-    public ResponseEntity<?> addContactToBlacklist(@Valid @RequestBody AddContactRequest addContactRequest,
+    public ResponseEntity<?> addContactToBlacklist(@Valid @RequestBody BlacklistRestController.AddBannedRequest addBannedRequest,
                                            HttpServletRequest request){
         User user = httpRequestComponent.getUserFromToken(request);
-        ObjectId id = new ObjectId(addContactRequest.getUser());
+        ObjectId id = new ObjectId(addBannedRequest.getUser());
         if (user != null) {
             UserBlacklist userBlacklist = userBlacklistService.getUserBlacklist(user, id);
             if (userBlacklist == null) {
@@ -87,7 +87,7 @@ public class BlacklistRestController {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class AddContactRequest {
+    public static class AddBannedRequest {
 
         @NotNull
         @NotEmpty

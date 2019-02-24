@@ -15,7 +15,7 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @Document(collection = "groups.members")
 public class GroupMember {
-
+    //TODO unique = Group + Member
     @Id
     private ObjectId id;
 

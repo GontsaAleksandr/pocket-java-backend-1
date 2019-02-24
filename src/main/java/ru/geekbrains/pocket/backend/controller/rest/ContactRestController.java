@@ -10,6 +10,7 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserContact;
@@ -22,7 +23,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Log4j2
 @RestController
@@ -53,7 +58,8 @@ public class ContactRestController {
         User user = httpRequestComponent.getUserFromToken(request);
         if (user != null) {
             UserContact userContact = userContactService.getUserContact(user, new ObjectId(id));
-            return new ResponseEntity<>(new UserContactPub(userContact), HttpStatus.OK);
+            if (userContact != null)
+                return new ResponseEntity<>(new UserContactPub(userContact), HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
@@ -61,10 +67,15 @@ public class ContactRestController {
     @PostMapping("/contacts") //Добавить новый контакт
     //Особенность: не возвращает ошибки, если такой пользователь в списке контактов уже есть, но и не добавляет его еще раз
     public ResponseEntity<?> addNewContact(@Valid @RequestBody AddContactRequest addContactRequest,
+                                           final BindingResult result,
                                            HttpServletRequest request){
+        if(result.hasErrors()) {
+            return getResponseEntity(result);
+        }
+
         User user = httpRequestComponent.getUserFromToken(request);
-        ObjectId id = new ObjectId(addContactRequest.getUser());
         if (user != null) {
+            ObjectId id = new ObjectId(addContactRequest.getUser());
             UserContact userContact = userContactService.getUserContact(user, id);
             if (userContact == null) {
                 User contact = userService.getUserById(id);
@@ -84,7 +95,12 @@ public class ContactRestController {
     @PutMapping("/contacts/{id}") //Редактировать контакт
     public ResponseEntity<?> editContact(@PathVariable String id,
                                          @Valid @RequestBody EditContactRequest editContactRequest,
+                                         final BindingResult result,
                                          HttpServletRequest request){
+        if(result.hasErrors()) {
+            return getResponseEntity(result);
+        }
+
         User user = httpRequestComponent.getUserFromToken(request);
         String byname = editContactRequest.getByname();
         if (user != null && byname != null) {
@@ -98,6 +114,17 @@ public class ContactRestController {
         return new ResponseEntity<>(HttpStatus.FORBIDDEN);
     }
 
+    private ResponseEntity<?> getResponseEntity(BindingResult result) {
+        final Map<String, Object> response = new HashMap<>();
+        response.put("message", "Your request contains errors");
+        response.put("errors", result.getAllErrors()
+                .stream()
+                .map(x -> String.format("%s : %s", x.getCode(), x.getDefaultMessage()))
+                .collect(Collectors.toList()));
+        log.debug(response);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @DeleteMapping("/contacts/{id}") //Удалить контакт
     //Особенность: не возвращает ошибки, даже если такого пользователя в контактах нет
     public ResponseEntity<?> deleteContact(@PathVariable String id,
@@ -106,7 +133,7 @@ public class ContactRestController {
         if (user != null) {
             UserContact userContact = userContactService.getUserContact(user, new ObjectId(id));
             if (userContact != null) {
-                userContactService.deleteUsersContact(userContact);
+                userContactService.delete(userContact);
                 return new ResponseEntity<>(HttpStatus.OK);
             }
         }
@@ -119,7 +146,7 @@ public class ContactRestController {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class AddContactRequest {
+    public static class AddContactRequest {
 
         @NotNull
         @NotEmpty
@@ -128,15 +155,19 @@ public class ContactRestController {
         @Nullable
         private String byname;
 
+        public AddContactRequest(@NotNull @NotEmpty String user) {
+            this.user = user;
+        }
     }
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class EditContactRequest {
+    public static class EditContactRequest {
 
         @NotNull
+        @Size(min = 2, max = 32)
         private String byname;
 
     }

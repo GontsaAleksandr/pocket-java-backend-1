@@ -2,6 +2,7 @@ package ru.geekbrains.pocket.backend.repository;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserContact;
@@ -15,6 +16,9 @@ public interface UserContactRepository extends MongoRepository<UserContact, Obje
 
     UserContact findFirstByUserAndContact(User user, User contact);
 
-    UserContact findFirstByUserAndContactId(User user, ObjectId id);
+    //@Query("{ '_id': ?0, 'userId': ?1 }")
+    UserContact findFirstByUserAndContact_Id(User user, ObjectId id);
+
+    void deleteByUser(User user);
 
 }

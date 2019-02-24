@@ -3,7 +3,6 @@ package ru.geekbrains.pocket.backend.RestController;
 import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j2;
 import org.bson.types.ObjectId;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,20 +15,21 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.context.WebApplicationContext;
-import ru.geekbrains.pocket.backend.controller.rest.AccountRestController;
-import ru.geekbrains.pocket.backend.controller.rest.AuthRestController;
+import ru.geekbrains.pocket.backend.controller.rest.BlacklistRestController;
 import ru.geekbrains.pocket.backend.domain.db.User;
+import ru.geekbrains.pocket.backend.domain.db.UserBlacklist;
 import ru.geekbrains.pocket.backend.domain.db.UserChat;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatCollection;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatPub;
-import ru.geekbrains.pocket.backend.service.UserChatService;
+import ru.geekbrains.pocket.backend.domain.pub.UserBlacklistCollection;
+import ru.geekbrains.pocket.backend.domain.pub.UserBlacklistPub;
+import ru.geekbrains.pocket.backend.service.UserBlacklistService;
 import ru.geekbrains.pocket.backend.service.UserService;
 import ru.geekbrains.pocket.backend.service.UserTokenService;
 
 import java.nio.charset.Charset;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @SpringBootTest
-public class ChatRestControllerTest {
+public class BlacklistRestControllerTest {
 
     private final String email = "testing@mail.ru";
     private final String password = "Abc12345";
@@ -48,9 +48,9 @@ public class ChatRestControllerTest {
     @Autowired
     private UserService userService;
     @Autowired
-    private UserTokenService userTokenService;
+    private UserBlacklistService userBlacklistService;
     @Autowired
-    private UserChatService userChatService;
+    private UserTokenService userTokenService;
 
     private MockMvc mockMvc;
     private Gson gson;
@@ -66,17 +66,21 @@ public class ChatRestControllerTest {
         gson = new Gson();
     }
 
-    //=============== chats get ===============
+    //=============== blacklist get ===============
 
     @Test
-    public void chats() throws Exception {
+    public void getBlacklist() throws Exception {
         String offset = "0";
-        assertNotNull(getUser()); //юзер от которого выполняется запрос, нужен для получения токена
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                userService.getUserByEmail(email));
-        assertNotNull(userChat);
 
-        ResultActions result = mockMvc.perform(get("/account/chats")
+        User user = getUser();
+        assertNotNull(user);
+
+        UserBlacklist userBlacklist = userBlacklistService.createUserBlacklist(user, user);
+        assertNotNull(userBlacklist);
+        userBlacklist = userBlacklistService.createUserBlacklist(user, user);
+        assertNotNull(userBlacklist);
+
+        ResultActions result = mockMvc.perform(get("/account/blacklist")
                 .header("Authorization", "Bearer " + token)
                 .param("offset",offset))
                 .andExpect(status().isOk())
@@ -89,27 +93,58 @@ public class ChatRestControllerTest {
 
         MvcResult mvcResult  = result.andReturn();
         String r = mvcResult.getResponse().getContentAsString();
-        UserChatCollection userChatCollection = gson.fromJson(r, UserChatCollection.class);
-        assertNotNull(userChatCollection);
+        UserBlacklistCollection userBlacklistCollection = gson.fromJson(r, UserBlacklistCollection.class);
+        assertNotNull(userBlacklistCollection);
     }
 
-    //=============== chat delete ===============
+    //=============== blacklist post ===============
 
     @Test
-    public void deleteChat() throws Exception {
-        assertNotNull(getUser());
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                                                            userService.getUserByEmail(email));
-        assertNotNull(userChat);
-        String id = userChat.getId().toString();
+    public void addUserToBlacklist() throws Exception {
+        User user = getUser();
+        assertNotNull(user);
+        String idBanned = user.getId().toString();
 
-        mockMvc.perform(delete("/account/chats/" + id)
+        UserBlacklist userBlacklist = userBlacklistService.createUserBlacklist(user, user);
+        assertNotNull(userBlacklist);
+
+        BlacklistRestController.AddBannedRequest addBannedRequest =
+                new BlacklistRestController.AddBannedRequest(idBanned);
+        assertNotNull(addBannedRequest);
+        ResultActions result = mockMvc.perform(post("/account/blacklist")
+                .header("Authorization", "Bearer " + token)
+                .content(gson.toJson(addBannedRequest))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$.user", notNullValue()))
+                .andExpect(jsonPath("$.user.id", equalTo(idBanned)))
+                ;
+
+        MvcResult mvcResult  = result.andReturn();
+        String r = mvcResult.getResponse().getContentAsString();
+        UserBlacklistPub userBlacklistPub = gson.fromJson(r, UserBlacklistPub.class);
+        assertNotNull(userBlacklistPub);
+    }
+
+    //=============== blacklist delete ===============
+
+    @Test
+    public void deleteUserFromBlacklist() throws Exception {
+        User user = getUser();
+        assertNotNull(user);
+        String idBanned = user.getId().toString();
+
+        UserBlacklist userBlacklist = userBlacklistService.createUserBlacklist(user, user);
+        assertNotNull(userBlacklist);
+
+        mockMvc.perform(delete("/account/blacklist/" + idBanned)
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
         ;
 
-        userChat = userChatService.getUserChat(new ObjectId(id));
-        assertNull(userChat);
+        userBlacklist = userBlacklistService.getUserBlacklist(user, user);
+        assertNull(userBlacklist);
     }
 
     private User getUser() {

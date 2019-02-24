@@ -2,8 +2,6 @@ package ru.geekbrains.pocket.backend.RestController;
 
 import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j2;
-import org.bson.types.ObjectId;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,13 +14,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.context.WebApplicationContext;
-import ru.geekbrains.pocket.backend.controller.rest.AccountRestController;
-import ru.geekbrains.pocket.backend.controller.rest.AuthRestController;
+import ru.geekbrains.pocket.backend.controller.rest.GroupMemberRestController;
+import ru.geekbrains.pocket.backend.domain.db.Group;
+import ru.geekbrains.pocket.backend.domain.db.GroupMember;
 import ru.geekbrains.pocket.backend.domain.db.User;
-import ru.geekbrains.pocket.backend.domain.db.UserChat;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatCollection;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatPub;
-import ru.geekbrains.pocket.backend.service.UserChatService;
+import ru.geekbrains.pocket.backend.domain.pub.GroupMemberCollection;
+import ru.geekbrains.pocket.backend.domain.pub.GroupMemberPub;
+import ru.geekbrains.pocket.backend.enumeration.RoleGroupMember;
+import ru.geekbrains.pocket.backend.service.GroupMemberService;
+import ru.geekbrains.pocket.backend.service.GroupService;
 import ru.geekbrains.pocket.backend.service.UserService;
 import ru.geekbrains.pocket.backend.service.UserTokenService;
 
@@ -38,19 +38,20 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @SpringBootTest
-public class ChatRestControllerTest {
+public class GroupInviteRestControllerTest {
 
     private final String email = "testing@mail.ru";
     private final String password = "Abc12345";
     private final String username = "Testing";
+    private final String fullname = "Testing Backend";
     @Autowired
     private WebApplicationContext webApplicationContext;
     @Autowired
     private UserService userService;
     @Autowired
-    private UserTokenService userTokenService;
+    private GroupService groupService;
     @Autowired
-    private UserChatService userChatService;
+    private UserTokenService userTokenService;
 
     private MockMvc mockMvc;
     private Gson gson;
@@ -66,50 +67,69 @@ public class ChatRestControllerTest {
         gson = new Gson();
     }
 
-    //=============== chats get ===============
+    //=============== group invite get ===============
 
     @Test
-    public void chats() throws Exception {
-        String offset = "0";
-        assertNotNull(getUser()); //юзер от которого выполняется запрос, нужен для получения токена
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                userService.getUserByEmail(email));
-        assertNotNull(userChat);
+    public void getInviteCode() throws Exception {
+        User user = getUser();
+        assertNotNull(user);
 
-        ResultActions result = mockMvc.perform(get("/account/chats")
-                .header("Authorization", "Bearer " + token)
-                .param("offset",offset))
+        Group group = groupService.createGroup(user);
+        assertNotNull(group);
+        String idGroup = group.getId().toString();
+        String invitationCode = group.getInvitation_code();
+
+        mockMvc.perform(get("/groups/" + idGroup + "/invites")
+                .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(contentType))
-                .andExpect(jsonPath("$", notNullValue()))
-                .andExpect(jsonPath("$.offset", isA(Number.class)))
-                .andExpect(jsonPath("$.offset", equalTo(new Integer(offset))))
-                .andExpect(jsonPath("$..[0]",  notNullValue()))
-        ;
-
-        MvcResult mvcResult  = result.andReturn();
-        String r = mvcResult.getResponse().getContentAsString();
-        UserChatCollection userChatCollection = gson.fromJson(r, UserChatCollection.class);
-        assertNotNull(userChatCollection);
+                .andExpect(jsonPath("$.active", equalTo(true)))
+                .andExpect(jsonPath("$.invitation_code", equalTo(invitationCode)))
+                ;
     }
 
-    //=============== chat delete ===============
+    //=============== group invite post ===============
 
     @Test
-    public void deleteChat() throws Exception {
-        assertNotNull(getUser());
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                                                            userService.getUserByEmail(email));
-        assertNotNull(userChat);
-        String id = userChat.getId().toString();
+    public void createInviteCode() throws Exception {
+        User user = getUser();
+        assertNotNull(user);
 
-        mockMvc.perform(delete("/account/chats/" + id)
+        Group group = groupService.createGroup(user);
+        assertNotNull(group);
+        String idGroup = group.getId().toString();
+        String invitationCode = group.getInvitation_code();
+
+        mockMvc.perform(post("/groups/" + idGroup + "/invites")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$.active", equalTo(true)))
+                .andExpect(jsonPath("$.invitation_code", notNullValue()))
+                .andExpect(jsonPath("$.invitation_code", not(invitationCode)))
+                ;
+    }
+
+    //=============== group invite delete ===============
+
+    @Test
+    public void deleteGroup() throws Exception {
+        User user = getUser();
+        assertNotNull(user);
+
+        Group group = groupService.createGroup(user);
+        assertNotNull(group);
+        String idGroup = group.getId().toString();
+
+        mockMvc.perform(delete("/groups/" + idGroup + "/invites")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
         ;
 
-        userChat = userChatService.getUserChat(new ObjectId(id));
-        assertNull(userChat);
+        group = groupService.getGroup(group.getId());
+        assertNotNull(group);
+        assertNull(group.getInvitation_code());
+
     }
 
     private User getUser() {

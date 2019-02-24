@@ -6,9 +6,11 @@ import org.springframework.stereotype.Service;
 import ru.geekbrains.pocket.backend.domain.db.User;
 import ru.geekbrains.pocket.backend.domain.db.UserContact;
 import ru.geekbrains.pocket.backend.repository.UserContactRepository;
+import ru.geekbrains.pocket.backend.repository.UserRepository;
 import ru.geekbrains.pocket.backend.service.UserContactService;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserContactServiselmpl implements UserContactService {
@@ -41,7 +43,12 @@ public class UserContactServiselmpl implements UserContactService {
     }
 
     @Override
-    public void deleteUsersContact(UserContact userContact) {
+    public void deleteByUser(User user) {
+        repository.deleteByUser(user);
+    }
+
+    @Override
+    public void delete(UserContact userContact) {
         repository.delete(userContact);
     }
 
@@ -52,7 +59,11 @@ public class UserContactServiselmpl implements UserContactService {
 
     @Override
     public UserContact getUserContact(User user, ObjectId idContact) {
-        return repository.findFirstByUserAndContactId(user, idContact);
+        return repository.findFirstByUserAndContact_Id(user,idContact);
+//        Optional<User> contact = userRepository.findById(idContact);
+//        if (contact.isPresent())
+//            return repository.findFirstByUserAndContact(user, contact.get());
+//        return null;
     }
 
     @Override

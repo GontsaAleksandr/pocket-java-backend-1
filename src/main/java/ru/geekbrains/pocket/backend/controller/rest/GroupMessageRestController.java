@@ -36,7 +36,7 @@ public class GroupMessageRestController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 }
 
-    @GetMapping("/{idGroup}/messages/{id}") //Получить конкретное сообщение
+    @GetMapping("/{idGroup}/messages/{idMessage}") //Получить конкретное сообщение
     public ResponseEntity<?> findMessage(@PathVariable String idGroup, @PathVariable String idMessage) {
         GroupMessage message = groupMessageService.getMessage(new ObjectId(idMessage));
         if (message != null) {

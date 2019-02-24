@@ -14,6 +14,8 @@ import ru.geekbrains.pocket.backend.domain.db.UserProfile;
 import ru.geekbrains.pocket.backend.exception.InvalidOldPasswordException;
 import ru.geekbrains.pocket.backend.exception.UserAlreadyExistException;
 import ru.geekbrains.pocket.backend.exception.UserNotFoundException;
+import ru.geekbrains.pocket.backend.repository.UserChatRepository;
+import ru.geekbrains.pocket.backend.repository.UserContactRepository;
 import ru.geekbrains.pocket.backend.repository.UserRepository;
 import ru.geekbrains.pocket.backend.repository.UserTokenRepository;
 import ru.geekbrains.pocket.backend.resource.UserResource;
@@ -33,6 +35,10 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     @Autowired
     private RoleService roleService;
+    @Autowired
+    private UserChatRepository userChatRepository;
+    @Autowired
+    private UserContactRepository userContactRepository;
     @Autowired
     private UserTokenRepository userTokenRepository;
     @Autowired
@@ -83,10 +89,10 @@ public class UserServiceImpl implements UserService {
     private void deleteCascade(User user) {
         if (user != null ) {
             userRepository.deleteById(user.getId());
- //           UserToken userToken = userTokenRepository.findByUser(user);
-  //          if (userToken != null)
-                userTokenRepository.deleteByUser(user);
             //TODO каскадное удаление
+            userTokenRepository.deleteByUser(user);
+            userChatRepository.deleteByUser(user);
+            userContactRepository.deleteByUser(user);
         }
     }
 

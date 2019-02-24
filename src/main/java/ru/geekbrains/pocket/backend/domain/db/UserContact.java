@@ -17,7 +17,7 @@ import java.util.Date;
 @NoArgsConstructor
 @Document(collection = "users.contacts")
 public class UserContact {
-
+//TODO unique = User + Contact
     @Id
     private ObjectId id;
 

@@ -2,8 +2,6 @@ package ru.geekbrains.pocket.backend.RestController;
 
 import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j2;
-import org.bson.types.ObjectId;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,21 +14,22 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.context.WebApplicationContext;
-import ru.geekbrains.pocket.backend.controller.rest.AccountRestController;
-import ru.geekbrains.pocket.backend.controller.rest.AuthRestController;
+import ru.geekbrains.pocket.backend.domain.db.Group;
+import ru.geekbrains.pocket.backend.domain.db.GroupMessage;
 import ru.geekbrains.pocket.backend.domain.db.User;
-import ru.geekbrains.pocket.backend.domain.db.UserChat;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatCollection;
-import ru.geekbrains.pocket.backend.domain.pub.UserChatPub;
-import ru.geekbrains.pocket.backend.service.UserChatService;
+import ru.geekbrains.pocket.backend.domain.db.UserMessage;
+import ru.geekbrains.pocket.backend.domain.pub.MessageCollection;
+import ru.geekbrains.pocket.backend.domain.pub.MessagePub;
+import ru.geekbrains.pocket.backend.service.GroupMessageService;
+import ru.geekbrains.pocket.backend.service.GroupService;
 import ru.geekbrains.pocket.backend.service.UserService;
 import ru.geekbrains.pocket.backend.service.UserTokenService;
 
 import java.nio.charset.Charset;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.junit.Assert.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -38,7 +37,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @SpringBootTest
-public class ChatRestControllerTest {
+public class GroupMessageRestControllerTest {
 
     private final String email = "testing@mail.ru";
     private final String password = "Abc12345";
@@ -50,7 +49,9 @@ public class ChatRestControllerTest {
     @Autowired
     private UserTokenService userTokenService;
     @Autowired
-    private UserChatService userChatService;
+    private GroupService groupService;
+    @Autowired
+    private GroupMessageService groupMessageService;
 
     private MockMvc mockMvc;
     private Gson gson;
@@ -66,17 +67,26 @@ public class ChatRestControllerTest {
         gson = new Gson();
     }
 
-    //=============== chats get ===============
+    //=============== group messages get ===============
 
     @Test
-    public void chats() throws Exception {
+    public void getMessages() throws Exception {
         String offset = "0";
-        assertNotNull(getUser()); //юзер от которого выполняется запрос, нужен для получения токена
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                userService.getUserByEmail(email));
-        assertNotNull(userChat);
+        String textMessage = "Test text message";
 
-        ResultActions result = mockMvc.perform(get("/account/chats")
+        User user = getUser();
+        assertNotNull(user);
+
+        Group group = groupService.createGroup(user);
+        assertNotNull(group);
+        String idGroup = group.getId().toString();
+
+        GroupMessage groupMessage = groupMessageService.createMessage(user, group, textMessage);
+        assertNotNull(groupMessage);
+        groupMessage = groupMessageService.createMessage(user, group, textMessage + " 2");
+        assertNotNull(groupMessage);
+
+        ResultActions result = mockMvc.perform(get("/groups/" + idGroup + "/messages")
                 .header("Authorization", "Bearer " + token)
                 .param("offset",offset))
                 .andExpect(status().isOk())
@@ -89,27 +99,42 @@ public class ChatRestControllerTest {
 
         MvcResult mvcResult  = result.andReturn();
         String r = mvcResult.getResponse().getContentAsString();
-        UserChatCollection userChatCollection = gson.fromJson(r, UserChatCollection.class);
-        assertNotNull(userChatCollection);
+        MessageCollection messageCollection = gson.fromJson(r, MessageCollection.class);
+        assertNotNull(messageCollection);
     }
 
-    //=============== chat delete ===============
+    //=============== group message get ===============
 
     @Test
-    public void deleteChat() throws Exception {
-        assertNotNull(getUser());
-        UserChat userChat = userChatService.createUserChat(userService.getUserByEmail(email),
-                                                            userService.getUserByEmail(email));
-        assertNotNull(userChat);
-        String id = userChat.getId().toString();
+    public void getMessage() throws Exception {
+        String textMessage = "Test text message";
 
-        mockMvc.perform(delete("/account/chats/" + id)
+        User user = getUser();
+        assertNotNull(user);
+        String idUser = user.getId().toString();
+
+        Group group = groupService.createGroup(user);
+        assertNotNull(group);
+        String idGroup = group.getId().toString();
+
+        GroupMessage groupMessage = groupMessageService.createMessage(user, group, textMessage);
+        assertNotNull(groupMessage);
+        groupMessage = groupMessageService.createMessage(user, group, textMessage + " 2");
+        assertNotNull(groupMessage);
+        String idMessage = groupMessage.getId().toString();
+
+        ResultActions result = mockMvc.perform(get("/groups/" + idGroup + "/messages/" + idMessage)
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-        ;
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$", notNullValue()))
+                .andExpect(jsonPath("$.id", equalTo(idMessage)))
+                .andExpect(jsonPath("$.text",  equalTo(textMessage + " 2")))
+                ;
 
-        userChat = userChatService.getUserChat(new ObjectId(id));
-        assertNull(userChat);
+        MessagePub message = gson.fromJson(result.andReturn().getResponse().getContentAsString(),
+                MessagePub.class);
+        assertNotNull(message);
     }
 
     private User getUser() {
@@ -117,6 +142,7 @@ public class ChatRestControllerTest {
         User user = userService.createUserAccount(email, password, username);
         try {
             token = userTokenService.getValidToken(user, "0.0.0.0").getToken();
+            log.debug(token);
         } catch (Exception ex) {
             log.debug(ex.getMessage());
         }

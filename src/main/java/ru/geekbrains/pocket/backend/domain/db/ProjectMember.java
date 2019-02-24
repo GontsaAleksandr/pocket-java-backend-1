@@ -6,7 +6,7 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
-import ru.geekbrains.pocket.backend.enumeration.GroupRole;
+import ru.geekbrains.pocket.backend.enumeration.RoleGroupMember;
 
 @Data
 @NoArgsConstructor
@@ -23,5 +23,5 @@ public class ProjectMember {
     @DBRef
     private User member;
 
-    private GroupRole role = GroupRole.speacker;
+    private RoleGroupMember role = RoleGroupMember.speacker;
 }

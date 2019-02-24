@@ -14,7 +14,9 @@ public interface UserContactService {
 
     UserContact createUserContact(User user, User contact, String byname);
 
-    void deleteUsersContact(UserContact contactOnDelete);
+    void deleteByUser(User user);
+
+    void delete(UserContact userContact);
 
     UserContact getUserContact(User user, User contact);
 

@@ -11,6 +11,7 @@ import ru.geekbrains.pocket.backend.repository.GroupRepository;
 import ru.geekbrains.pocket.backend.service.GroupMemberService;
 import ru.geekbrains.pocket.backend.service.GroupService;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,22 +23,29 @@ public class GroupServiceImpl implements GroupService {
     private GroupMemberService groupMemberService;
 
     @Override
-    public Group createGroup(Group group) {
-        return groupRepository.insert(group);
+    public Group createGroup(@NotNull Group group) {
+        if (group.getCreator() != null) {
+            group = groupRepository.insert(group);
+            if (group != null) {
+                groupMemberService.createGroupMember(group, group.getCreator(), RoleGroupMember.administrator);
+                return group;
+            }
+        }
+        return null;
     }
 
     @Override
-    public Group createGroupAndMember(Group group, User member) {
-        group = groupRepository.insert(group);
+    public Group createGroup(@NotNull User creator) {
+        Group group = groupRepository.insert(new Group(creator));
         if (group != null) {
-            groupMemberService.createGroupMember(group, member, RoleGroupMember.administrator);
+            groupMemberService.createGroupMember(group, creator, RoleGroupMember.administrator);
             return group;
         }
         return null;
     }
 
     @Override
-    public void deleteGroup(Group group) {
+    public void deleteGroup(@NotNull Group group) {
         groupRepository.delete(group);
     }
 

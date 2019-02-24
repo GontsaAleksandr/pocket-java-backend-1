@@ -52,14 +52,7 @@ public class AccountRestController {
     // в других случаях валидация работать не будет
 
         if(result.hasErrors()) {
-            final Map<String, Object> response = new HashMap<>();
-            response.put("message", "Your request contains errors");
-            response.put("errors", result.getAllErrors()
-                    .stream()
-                    .map(x -> String.format("%s : %s", x.getCode(), x.getDefaultMessage()))
-                    .collect(Collectors.toList()));
-            log.debug(response);
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return getResponseEntity(result);
         }
         if ((editAccountRequest.getName() == null
                 && editAccountRequest.getOldPassword() == null
@@ -91,6 +84,17 @@ public class AccountRestController {
         }
         log.debug("Successfully edit user '" + user.getEmail() + "'");
         return new ResponseEntity<>(new UserPub(user), HttpStatus.OK);
+    }
+
+    private ResponseEntity<?> getResponseEntity(BindingResult result) {
+        final Map<String, Object> response = new HashMap<>();
+        response.put("message", "Your request contains errors");
+        response.put("errors", result.getAllErrors()
+                .stream()
+                .map(x -> String.format("%s : %s", x.getCode(), x.getDefaultMessage()))
+                .collect(Collectors.toList()));
+        log.debug(response);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @Getter
