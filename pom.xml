@@ -7,7 +7,7 @@
 
     <groupId>ru.geekbrains</groupId>
     <artifactId>pocket.backend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Pocket Java Backend</name>
     <description>Pocket Java Backend Application</description>
@@ -68,16 +68,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
 
         <!--<dependency>-->
         <!--<groupId>org.springframework.boot</groupId>-->
@@ -108,6 +98,18 @@
         <!--            <groupId>org.thymeleaf.extras</groupId>-->
         <!--            <artifactId>thymeleaf-extras-springsecurity4</artifactId>-->
         <!--        </dependency>-->
+
+        <!-- test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- 2fa -->
         <dependency>
@@ -201,21 +203,28 @@
         </dependencies>
     </dependencyManagement>
 
+    <scm>
+        <connection>scm:git:ssh:git@github.com:siblis/pocket-java-backend.git</connection>
+        <developerConnection>scm:git:ssh:git@github.com:siblis/pocket-java-backend.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/siblis/pocket-java-backend.git</url>
+    </scm>
+
     <build>
         <finalName>${project.name}-${project.version}</finalName>
         <resources>
             <resource>
-                <directory>src/main/webapp</directory>
-            </resource>
-            <resource>
-                <directory>${basedir}/src/main/webapp/resources/properties</directory>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
                 <includes>
-                    <include>app.properties</include>
+                    <include>application.properties</include>
                 </includes>
                 <targetPath>..</targetPath>
             </resource>
         </resources>
         <plugins>
+<!--            http://java-online.ru/maven-plugins.xhtml#maven-compiler-plugin-->
+<!--            https://habr.com/ru/post/310738/-->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -230,6 +239,49 @@
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+            <!--плагин для копирования файлов ресурсов в директорию target-->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>
+                                ${basedir}/target/resources
+                            </outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources</directory>
+                                    <includes>
+                                        <include>**/*.jks</include>
+                                        <include>**/*.xml</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <directory>src/main/resources</directory>
+                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>**/*.properties</include>
+                                    </includes>
+                                </resource>
+<!--                                <resource>-->
+<!--                                    <directory>src/main/resources/images</directory>-->
+<!--                                    <includes>-->
+<!--                                        <include>**/*.png</include>-->
+<!--                                    </includes>-->
+<!--                                </resource>-->
+                            </resources>
+                            <nonFilteredFileExtensions>
+                                <nonFilteredFileExtension>jks</nonFilteredFileExtension>
+                            </nonFilteredFileExtensions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!--плагин для исключения из джарника библиотек зависимостей-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -237,12 +289,13 @@
                 <executions>
                     <execution>
                         <id>copy-dependencies</id>
-                        <phase>prepare-package</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <includeScope>compile</includeScope><!--исключить тестовые зависимости-->
+                            <outputDirectory>${project.build.directory}/dependency</outputDirectory>
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>false</overWriteSnapshots>
                             <overWriteIfNewer>true</overWriteIfNewer>
@@ -250,7 +303,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--плагин для формирования манифеста-->
+            <!--плагин для формирования jar-файла и манифеста-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -261,11 +314,109 @@
                             <classpathPrefix>lib/</classpathPrefix>
                             <classpathLayoutType>simple</classpathLayoutType>
                             <mainClass>ru.geekbrains.pocket.backend.PocketBackendApplication</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
                         <manifestEntries>
                             <Version>${project.build}</Version>
+                            <Implementation-Version>${project.version}-${buildNumber}</Implementation-Version>
+                            <Implementation-Build>$\{buildNumber}</Implementation-Build>
                         </manifestEntries>
                     </archive>
+                </configuration>
+            </plugin>
+            <!--плагин для формирования war-файла и манифеста-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Implementation-Build>$\{buildNumber}</Implementation-Build>
+                        </manifestEntries>
+                    </archive>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
+            <!--плагин для удаления ненужных артефактов после завершения сборки-->
+            <!--Например, если приложение упаковано в файл WAR, и вы хотите удалить все файлы JAR-->
+            <!--(потому что они дублируются внутри файла WAR) в результате остаётся только WAR файл-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-clean-plugin</artifactId>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>clean-jar-artifacts</id>-->
+<!--                        <phase>install</phase>-->
+<!--                        <goals><goal>clean</goal></goals>-->
+<!--                        <configuration>-->
+<!--                            <excludeDefaultDirectories>true</excludeDefaultDirectories>-->
+<!--                            <filesets>-->
+<!--                                <fileset>-->
+<!--                                    <directory>target/dependency/*.jar</directory>-->
+<!--                                </fileset>-->
+<!--                                <fileset>-->
+<!--                                    <directory>target</directory>-->
+<!--                                    <excludes>-->
+<!--                                        <exclude>*.war</exclude>-->
+<!--                                    </excludes>-->
+<!--                                </fileset>-->
+<!--                            </filesets>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+            <!--плагин для генерации номера сборки-->
+<!--            http://www.mojohaus.org/buildnumber-maven-plugin/usage.html-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+<!--                    doCheck — если true, то проект не скомпилируется пока в нем есть локальные изменения-->
+<!--                    doUpdate — позволяет Maven обновить Вашу текущую ревизию-->
+                    <doCheck>true</doCheck>
+                    <doUpdate>true</doUpdate>
+                    <revisionOnScmFailure>true</revisionOnScmFailure>
+                    <shortRevisionLength>5</shortRevisionLength>
+                    <format>{0}-{1,date,yyyyMMdd}</format>
+                    <items>
+                        <item>${project.version}</item>
+                        <item>timestamp</item>
+                    </items>
+                </configuration>
+            </plugin>
+            <!--плагин для запуска тестов-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>true</skipTests><!-- проигнорировать выполнение тестирования-->
+                    <testFailureIgnore>true</testFailureIgnore>
+                    <includes>
+                        <include>**/RestController/Test*.java</include>
+                        <include>**/RestController/*Test.java</include>
+<!--                        <include>**/Test*.java</include>-->
+<!--                        <include>**/*Test.java</include>-->
+<!--                        <include>**/*TestCase.java</include>-->
+                    </includes>
+                    <excludes>
+                        <exclude>**/Websocket/TestSquare.java</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/*LiveTest.java</exclude>
+                        <exclude>**/*MvcTest.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
